@@ -3,9 +3,6 @@ const ipcMain = require('electron').ipcMain;
 const messageName = 'invokeAction';
 
 function mainRunner(bw) {
-	var _hasRun = false;
-	var _queue = [];
-	var self = this;
 
 	this.typeText = function(cssSelector, text, callback) {
 		const message = {
@@ -32,6 +29,10 @@ function mainRunner(bw) {
 		onNextPageLoad(callback);
 	}
 
+	this.waitOnCurrentThread = function(callback) {
+		setTimeout(callback, 100);
+	}
+
 	this.goto = function(url, callback) {
 		const message = {
 			action: 'goto',
@@ -55,7 +56,7 @@ function mainRunner(bw) {
 	}
 
 	function onNextPageLoad(callback) {
-		bw.webContents.once('did-finish-load', () => {
+		bw.webContents.once('did-finish-load', function() {
 			setTimeout(callback, 0);
 		});
 	}

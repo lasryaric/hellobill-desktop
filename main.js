@@ -2,7 +2,8 @@
 
 const electron = require('electron');
 const bluebird = require('bluebird');
-const mainRunner = require('./mainRunner');
+const mainRunner = require('./BrowserAutomation');
+const lodash = require('lodash');
 bluebird.promisifyAll(mainRunner);
 
 
@@ -22,13 +23,10 @@ function createWindow () {
   var preload = __dirname + "/preload.js";
   mainWindow = new BrowserWindow({width: 800, height: 600, preload: preload, nodeIntegration: false});
 
+    mainWindow.loadURL('https://github.com/');
 
-  // and load the index.html of the app.
-  // mainWindow.loadURL('file://' + __dirname + '/index.html');
-  mainWindow.loadURL('https://github.com/');
 
-  // Open the DevTools.
-  //mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   
 
@@ -41,7 +39,6 @@ function createWindow () {
     mainWindow = null;
   });
 
-  var firstLoad = true;
 
   mainWindow.webContents.on('did-finish-load', function() {
 
@@ -51,25 +48,28 @@ function createWindow () {
     mainWindow.webContents.executeJavaScript("__hellobill.runLoop()");
     mainWindow.webContents.session.setDownloadPath(__dirname+'/downloads/');
 
-    var dd = false;
-
-    mainWindow.webContents.session.on('will-download', function(event, item, webContents) {
-      event.preventDefault();
-      if (dd == true) {
-        return ;
-      }
-      dd = true;
-      
-      var url = require('url')
-      var request = require('request');
-
-      var fileURL = url.parse(item.getURL());
-      var headers = {
-        "Cookie": null
-      }
+  });
 
 
-      mainWindow.webContents.session.cookies.get({}, function(err, cookies) {
+  var dd = false;
+
+  mainWindow.webContents.session.on('will-download', function(event, item, webContents) {
+    event.preventDefault();
+    if (dd == true) {
+      return ;
+    }
+    dd = true;
+
+    var url = require('url')
+    var request = require('request');
+
+    var fileURL = url.parse(item.getURL());
+    var headers = {
+      "Cookie": null
+    }
+
+
+    mainWindow.webContents.session.cookies.get({}, function(err, cookies) {
         // console.log('cookies:', cookies, fileURL)
         var ca = cookies.map(function(v) {
 
@@ -78,19 +78,8 @@ function createWindow () {
         
         if (ca) {
           headers["Cookie"] = ca.join(';');
-        } else {
-          console.log('ca is null:', ca);
         }
 
-        console.log('headers: ', headers)
-        // request({
-        //   uri: fileURL.href,
-        //   headers:  headers
-        // }, function(error, response, body) {
-        //   console.log(response.headers)
-        //     require('fs').writeFileSync(__dirname+"/billarico.pdf", body);
-          
-        // })
         var fs = require('fs');
         var requestOptions = {
           uri: fileURL.href,
@@ -105,28 +94,50 @@ function createWindow () {
 
 
 
-    });
-
-    if (firstLoad == true) {
-      const oneRunner = new mainRunner(mainWindow);
-      bluebird.promisifyAll(oneRunner);
-
-      oneRunner
-      .gotoAsync('https://github.com/settings/billing')
-      .then(() => {
-        return oneRunner.clickAsync('td.receipt a')
-      })
-      .then(() => {
-        console.log('done!')
-      })
-
-      firstLoad = false;    
-    }
-
-    
   });
 
-  
+  const oneRunner = new mainRunner(mainWindow);
+  bluebird.promisifyAll(oneRunner);
+
+  oneRunner
+  .gotoAsync('https://github.com/')
+  .then(() => {
+    return oneRunner.clickAsync(".header-actions .btn[href='/login']")
+  })
+  .then(() => {
+    return oneRunner.waitForPageAsync()
+  })
+  .then(() => {
+    return oneRunner.typeTextAsync('#login_field', 'lasry.aric@gmail.com')
+  })
+  .then(() => {
+    return oneRunner.typeTextAsync('#password', 'Jo31pal00!!!')
+  })
+  .then(() => {
+    oneRunner.waitOnCurrentThreadAsync()
+  })
+  .then(() => {
+    oneRunner.clickAsync('.auth-form-body input.btn-primary')
+  })
+  .then(() => {
+    return oneRunner.waitForPageAsync();
+  })
+  .then(() => {
+    return oneRunner.gotoAsync('https://github.com/settings/billing')
+  })
+  .then(() => {
+    return oneRunner.clickAsync('td.receipt a')
+  })
+  .then(() => {
+    console.log('done done done!')
+  })
+
+
+
+
+
+
+
 }
 
 // This method will be called when Electron has finished
