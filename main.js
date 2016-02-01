@@ -1,8 +1,11 @@
 'use strict';
 
 const electron = require('electron');
+const bluebird = require('bluebird');
+const mainRunner = require('./mainRunner');
+bluebird.promisifyAll(mainRunner);
 
-const mainRunner = require('./mainRunner.js');
+
 
 // Module to control application life.
 const app = electron.app;
@@ -106,18 +109,17 @@ function createWindow () {
 
     if (firstLoad == true) {
       const oneRunner = new mainRunner(mainWindow);
+      bluebird.promisifyAll(oneRunner);
 
       oneRunner
-      // .click(".header-actions .btn[href='/login']")
-      // .waitForPage()
-      // .typeText('#login_field', 'lasry.aric@gmail.com')
-      // .typeText('#password', 'Jo31pal00!!!')
-      // .waitMain()
-      // .click('.auth-form-body input.btn-primary')
-      // .waitForPage()
-      .goto('https://github.com/settings/billing')
-      .click('td.receipt a')
-      .run();
+      .gotoAsync('https://github.com/settings/billing')
+      .then(() => {
+        return oneRunner.clickAsync('td.receipt a')
+      })
+      .then(() => {
+        console.log('done!')
+      })
+
       firstLoad = false;    
     }
 
