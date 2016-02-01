@@ -3,6 +3,7 @@
 const electron = require('electron');
 const bluebird = require('bluebird');
 const mainRunner = require('./BrowserAutomation');
+const uuid = require('node-uuid');
 const lodash = require('lodash');
 bluebird.promisifyAll(mainRunner);
 
@@ -23,12 +24,12 @@ function createWindow () {
   var preload = __dirname + "/preload.js";
   mainWindow = new BrowserWindow({width: 800, height: 600, preload: preload, nodeIntegration: false});
 
-    mainWindow.loadURL('https://github.com/');
+  mainWindow.loadURL('https://github.com/');
 
 
   mainWindow.webContents.openDevTools();
 
-  
+
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function() {
@@ -44,96 +45,72 @@ function createWindow () {
 
 
     var bw = mainWindow;
-    console.log('started the runloop!');
+    console.log('starting __hellobill.runLoop()');
     mainWindow.webContents.executeJavaScript("__hellobill.runLoop()");
     mainWindow.webContents.session.setDownloadPath(__dirname+'/downloads/');
 
   });
 
 
-  var dd = false;
-
-  mainWindow.webContents.session.on('will-download', function(event, item, webContents) {
-    event.preventDefault();
-    if (dd == true) {
-      return ;
-    }
-    dd = true;
-
-    var url = require('url')
-    var request = require('request');
-
-    var fileURL = url.parse(item.getURL());
-    var headers = {
-      "Cookie": null
-    }
-
-
-    mainWindow.webContents.session.cookies.get({}, function(err, cookies) {
-        // console.log('cookies:', cookies, fileURL)
-        var ca = cookies.map(function(v) {
-
-          return v.name+"="+v.value;
-        });
-        
-        if (ca) {
-          headers["Cookie"] = ca.join(';');
-        }
-
-        var fs = require('fs');
-        var requestOptions = {
-          uri: fileURL.href,
-          headers: headers
-        }
-        var filename = __dirname+"/billarico.pdf";
-        request(requestOptions).pipe(fs.createWriteStream(filename)).on('close', () => {
-          console.log('DONE!')
-        });
-        
-      });
-
-
-
-  });
-
-  const oneRunner = new mainRunner(mainWindow);
+  const oneRunner = new mainRunner(mainWindow, "github");
   bluebird.promisifyAll(oneRunner);
 
   oneRunner
   .gotoAsync('https://github.com/')
   .then(() => {
-    return oneRunner.clickAsync(".header-actions .btn[href='/login']")
+    return oneRunner.elementExistsAsync('body.logged_in')
   })
-  .then(() => {
-    return oneRunner.waitForPageAsync()
-  })
-  .then(() => {
-    return oneRunner.typeTextAsync('#login_field', 'lasry.aric@gmail.com')
-  })
-  .then(() => {
-    return oneRunner.typeTextAsync('#password', 'Jo31pal00!!!')
-  })
-  .then(() => {
-    oneRunner.waitOnCurrentThreadAsync()
-  })
-  .then(() => {
-    oneRunner.clickAsync('.auth-form-body input.btn-primary')
-  })
-  .then(() => {
-    return oneRunner.waitForPageAsync();
+  .then((elementExists) => {
+    console.log('elementExists? : ', elementExists)
+    if (!elementExists.elementExists) {
+      return oneRunner.clickAsync(".header-actions .btn[href='/login']")
+      .then(() => {
+        return oneRunner.waitForPageAsync()
+      })
+      .then(() => {
+        return oneRunner.typeTextAsync('#login_field', 'lasry.aric@gmail.com')
+      })
+      .then(() => {
+        return oneRunner.typeTextAsync('#password', 'Jo31pal00!!!')
+      })
+      .then(() => {
+        oneRunner.waitOnCurrentThreadAsync()
+      })
+      .then(() => {
+        oneRunner.clickAsync('.auth-form-body input.btn-primary')
+      })
+      .then(() => {
+        return oneRunner.waitForPageAsync();
+      })
+    }
   })
   .then(() => {
     return oneRunner.gotoAsync('https://github.com/settings/billing')
   })
   .then(() => {
-    return oneRunner.clickAsync('td.receipt a')
+    // return oneRunner.clickAsync('td.receipt a')
+    return oneRunner.getInnerHTMLAsync('.org-settings-link')
+  })
+  .then((texts) => {
+    return texts;
+  })
+  .each((text) => {
+    const url = "https://github.com/organizations/"+text+"/settings/billing";
+
+    return oneRunner.gotoAsync(url)
+
+    .then(() => {
+      console.log('goto url :', url)
+    })
+    .then(() => {
+      return oneRunner
+      .clickDeepAndWaitForDownloadAsync("time[title^='2015-03']", 2, '.receipt a')
+    })
   })
   .then(() => {
-    console.log('done done done!')
+    console.log('after goto url billing');
+    // mainWindow.close();
   })
-
-
-
 
 
 
