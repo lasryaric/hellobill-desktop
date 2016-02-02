@@ -2,10 +2,9 @@
 
 const electron = require('electron');
 const bluebird = require('bluebird');
-const mainRunner = require('./BrowserAutomation');
 const uuid = require('node-uuid');
 const lodash = require('lodash');
-bluebird.promisifyAll(mainRunner);
+
 
 
 
@@ -51,70 +50,15 @@ function createWindow () {
 
   });
 
+  //here is the github runner originally
+  const GithubConnector = require('./lib/connectors/github');
 
-  const oneRunner = new mainRunner(mainWindow, "github");
-  bluebird.promisifyAll(oneRunner);
-
-  oneRunner
-  .gotoAsync('https://github.com/')
+  const oneGithub = new GithubConnector(mainWindow);
+  oneGithub
+  .runAsync("2015-01")
   .then(() => {
-    return oneRunner.elementExistsAsync('body.logged_in')
+    console.log(1);
   })
-  .then((elementExists) => {
-    console.log('elementExists? : ', elementExists)
-    if (!elementExists.elementExists) {
-      return oneRunner.clickAsync(".header-actions .btn[href='/login']")
-      .then(() => {
-        return oneRunner.waitForPageAsync()
-      })
-      .then(() => {
-        return oneRunner.typeTextAsync('#login_field', 'lasry.aric@gmail.com')
-      })
-      .then(() => {
-        return oneRunner.typeTextAsync('#password', 'Jo31pal00!!!')
-      })
-      .then(() => {
-        oneRunner.waitOnCurrentThreadAsync()
-      })
-      .then(() => {
-        oneRunner.clickAsync('.auth-form-body input.btn-primary')
-      })
-      .then(() => {
-        return oneRunner.waitForPageAsync();
-      })
-    }
-  })
-  .then(() => {
-    return oneRunner.gotoAsync('https://github.com/settings/billing')
-  })
-  .then(() => {
-    // return oneRunner.clickAsync('td.receipt a')
-    return oneRunner.getInnerHTMLAsync('.org-settings-link')
-  })
-  .then((texts) => {
-    return texts;
-  })
-  .each((text) => {
-    const url = "https://github.com/organizations/"+text+"/settings/billing";
-
-    return oneRunner.gotoAsync(url)
-
-    .then(() => {
-      console.log('goto url :', url)
-    })
-    .then(() => {
-      return oneRunner
-      .clickDeepAndWaitForDownloadAsync("time[title^='2015-03']", 2, '.receipt a')
-    })
-  })
-  .then(() => {
-    console.log('after goto url billing');
-    // mainWindow.close();
-  })
-
-
-
-
 }
 
 // This method will be called when Electron has finished

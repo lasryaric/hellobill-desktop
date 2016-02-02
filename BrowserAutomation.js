@@ -102,13 +102,26 @@ function mainRunner(bw, serviceName) {
 	}
 
 	function onNextPageLoad(callback) {
-		bw.webContents.once('did-finish-load', function() {
+
+		function couldNotExecuteHandler() {
+			console.log('got could not execute!')
+			bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
 			setTimeout(callback, 0);
-		});
+		}
+
+		function didLoadFinishHandler() {
+			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+			setTimeout(callback, 0);
+		};
+
+		bw.webContents.once('did-finish-load', didLoadFinishHandler);
+
+		ipcMain.once('couldNotExecute', couldNotExecuteHandler);
 	}
 
 	function onNextDownload(callback) {
-		bw.webContents.session.once('will-download', function(event, item, webContents) {
+
+		function willDownloadHandler(event, item, webContents) {
 			event.preventDefault();
 			console.log('will download!');
 
@@ -149,7 +162,18 @@ function mainRunner(bw, serviceName) {
 				});
 
 			});
-		});
+
+			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+		}
+
+		function couldNotExecuteHandler() {
+			bw.webContents.session.removeListener('will-download', willDownloadHandler);
+			setTimeout(callback, 0);
+
+		}
+
+		bw.webContents.session.once('will-download', willDownloadHandler);
+		ipcMain.once('couldNotExecute', couldNotExecuteHandler);
 	}
 }
 

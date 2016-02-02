@@ -5,6 +5,7 @@ function runnerClick(cssSelector, originalMessage, callback) {
 	console.log('runnerClick: ', cssSelector)
 	if (!domElemement || domElemement.length == 0) {
 		console.log('runnerClick: could not click on element!:', cssSelector)
+		callback(new Error('could not find css element:'+cssSelector), originalMessage);
 
 		return ;
 	}
@@ -45,6 +46,11 @@ function runnerDeepClick(firstCss, parentSteps, secondCss, originalMessage, call
 	const result = {
 		clickedOn: clickedOn
 	};
+	if (clickedOn == 0) {
+		callback(new Error('could not find css element:'+firstCss+','+secondCss), originalMessage);
+
+		return ;
+	}
 
   callback(null, originalMessage, result);
 }
@@ -75,9 +81,6 @@ function runnerGoto(url, originalMessage, callback) {
 function runnerGetInnerHTML(cssSelector, originalMessage, callback) {
 	var elems = document.querySelectorAll(cssSelector);
 
-	if (!elems || !elems.length) {
-		return ;
-	}
 
 	var texts = __hellobill._.map(elems, function(elem) {
 		return elem.innerHTML;
@@ -106,8 +109,13 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 function whenDone(error, originalMessage, data) {
 
 	data = data || {};
+	var messageName = 'doneExecuting';
+	if (error) {
+		messageName = 'couldNotExecute';
+	}
+	console.log('whenDone is Sending: messageName, data, originalMessage', messageName, data, originalMessage)
 
-	__hellobill.ipc.send('doneExecuting', data);
+	__hellobill.ipc.send(messageName, data);
 
 
 }
