@@ -106,6 +106,30 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 	});
 }
 
+function runnerWaitForCss(cssSelector, originalMessage, callback) {
+
+	var elementExists = false;
+	var called = 0;
+
+	function checkit() {
+		var domElemement = document.querySelectorAll(cssSelector);
+
+		if (domElemement.length > 0) {
+			callback(null, originalMessage);
+
+			return ;
+		} else if (called < 10) {
+			setTimeout(checkit, 500);
+			called++;
+		} else {
+			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssSelector), originalMessage);
+		}
+	}
+
+	checkit();
+
+}
+
 function whenDone(error, originalMessage, data) {
 
 	data = data || {};
@@ -142,6 +166,8 @@ function __hellobillLoop() {
 		runnerElementExists(message.cssSelector, message, whenDone)
 	} else if (message.action == 'clickDeep') {
 		runnerDeepClick(message.firstCss, message.parentSteps, message.secondCss, message, whenDone);
+	} else if (message.action='waitForCss') {
+		runnerWaitForCss(message.cssSelector, message, whenDone)
 	} else {
 		console.log('got an unknown message:', message);
 	}

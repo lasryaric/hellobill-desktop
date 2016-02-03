@@ -21,9 +21,10 @@ let mainWindow;
 function createWindow () {
   // Create the browser window.
   var preload = __dirname + "/preload.js";
-  mainWindow = new BrowserWindow({width: 800, height: 600, preload: preload, nodeIntegration: false});
+  mainWindow = new BrowserWindow({width: 1200, height: 600, preload: preload, nodeIntegration: false});
 
-  mainWindow.loadURL('https://github.com/');
+  mainWindow.loadURL('file://' + __dirname + '/index.html');
+
 
 
   mainWindow.webContents.openDevTools();
@@ -39,7 +40,6 @@ function createWindow () {
     mainWindow = null;
   });
 
-
   mainWindow.webContents.on('did-finish-load', function() {
 
 
@@ -50,15 +50,24 @@ function createWindow () {
 
   });
 
-  //here is the github runner originally
-  const GithubConnector = require('./lib/connectors/github');
+  mainWindow.webContents.once('did-finish-load', function() {
+    //here is the github runner originally
+    const GithubConnector = require('./lib/connectors/github');
+    const GoogleConnector = require('./lib/connectors/google');
+    const SkypeConnector = require('./lib/connectors/skype');
+    const date = "2015-12";
 
-  const oneGithub = new GithubConnector(mainWindow);
-  oneGithub
-  .runAsync("2015-01")
-  .then(() => {
-    console.log(1);
-  })
+    const skype = new SkypeConnector(mainWindow);
+    skype
+    .runAsync(date)
+    .then(() => {
+      const github = new GithubConnector(mainWindow);
+      return github.runAsync(date)
+    })
+    .then(() => {
+      console.log('done with github')
+    })
+  });
 }
 
 // This method will be called when Electron has finished

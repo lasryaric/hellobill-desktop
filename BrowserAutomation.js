@@ -27,17 +27,27 @@ function mainRunner(bw, serviceName) {
 		onNextActionCompleted(callback);
 	}
 
-	this.clickAndWaitForDownload = function(cssSelector, callback) {
+	this.clickAndWaitForPage = function(cssSelector, callback) {
 		const message = {
 			action: 'click',
 			cssSelector: cssSelector,
 		};
 
 		sendToBrowser(message);
-		onNextDownload(callback);
+		onNextPageLoad(callback);
 	}
 
-	this.clickDeepAndWaitForDownload = function(firstCss, parentSteps, secondCss, callback) {
+	this.clickAndWaitForDownload = function(cssSelector, fileName, callback) {
+		const message = {
+			action: 'click',
+			cssSelector: cssSelector,
+		};
+
+		sendToBrowser(message);
+		onNextDownload(fileName, callback);
+	}
+
+	this.clickDeepAndWaitForDownload = function(firstCss, parentSteps, secondCss, fileName, callback) {
 		const message = {
 			action: 'clickDeep',
 			firstCss: firstCss,
@@ -46,7 +56,7 @@ function mainRunner(bw, serviceName) {
 		};
 
 		sendToBrowser(message);
-		onNextDownload(callback);
+		onNextDownload(fileName, callback);
 	}
 
 	this.getInnerHTML = function(cssSelector, callback) {
@@ -73,8 +83,8 @@ function mainRunner(bw, serviceName) {
 		onNextPageLoad(callback);
 	}
 
-	this.waitOnCurrentThread = function(callback) {
-		setTimeout(callback, 3000);
+	this.waitOnCurrentThread = function(millisec, callback) {
+		setTimeout(callback, millisec);
 	}
 
 	this.goto = function(url, callback) {
@@ -87,7 +97,18 @@ function mainRunner(bw, serviceName) {
 		onNextPageLoad(callback);
 	}
 
+	this.waitForCss = function(cssSelector, callback) {
+		const message = {
+			action: 'waitForCss',
+			cssSelector: cssSelector
+		}
+
+		sendToBrowser(message);
+		onNextActionCompleted(callback);
+	}
+
 	function sendToBrowser(data) {
+		console.log('sending message to browser: ', messageName, data)
 		bw.send(messageName, data);
 	}
 
@@ -110,16 +131,16 @@ function mainRunner(bw, serviceName) {
 		}
 
 		function didLoadFinishHandler() {
-			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+			//ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
 			setTimeout(callback, 0);
 		};
 
 		bw.webContents.once('did-finish-load', didLoadFinishHandler);
 
-		ipcMain.once('couldNotExecute', couldNotExecuteHandler);
+		//ipcMain.once('couldNotExecute', couldNotExecuteHandler);
 	}
 
-	function onNextDownload(callback) {
+	function onNextDownload(targetFileName, callback) {
 
 		function willDownloadHandler(event, item, webContents) {
 			event.preventDefault();
@@ -151,14 +172,11 @@ function mainRunner(bw, serviceName) {
 					headers: headers
 				}
 
-				var filename = serviceName+"-"+filenameNB+".pdf";
-				filenameNB++;
-
-				filename = __dirname+"/"+filename;
-				console.log('lets go download :', filename)
-				request(requestOptions).pipe(fs.createWriteStream(filename)).on('close', function() {
-					console.log('DONE downloading!', filenameNB);
-					callback(null, filename);
+				const fileFullPath = __dirname+"/downloads/"+targetFileName;
+				console.log('lets go download :', requestOptions)
+				request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
+					console.log('DONE downloading!', fileFullPath);
+					callback(null, fileFullPath);
 				});
 
 			});
