@@ -89,6 +89,18 @@ function runnerGetInnerHTML(cssSelector, originalMessage, callback) {
 	callback(null, originalMessage, texts);
 }
 
+function runnerGetAttribute(cssSelector, attribute, originalMessage, callback) {
+	
+	var elems = document.querySelectorAll(cssSelector);
+
+
+	var texts = __hellobill._.map(elems, function(elem) {
+		return elem[attribute]
+	})
+
+	callback(null, originalMessage, texts);
+}
+
 
 function runnerElementExists(cssSelector, originalMessage, callback) {
 	var domElemement = document.querySelectorAll(cssSelector)
@@ -166,8 +178,10 @@ function __hellobillLoop() {
 		runnerElementExists(message.cssSelector, message, whenDone)
 	} else if (message.action == 'clickDeep') {
 		runnerDeepClick(message.firstCss, message.parentSteps, message.secondCss, message, whenDone);
-	} else if (message.action='waitForCss') {
+	} else if (message.action =='waitForCss') {
 		runnerWaitForCss(message.cssSelector, message, whenDone)
+	} else if (message.action == 'getAttribute') {
+		runnerGetAttribute(message.cssSelector, message.attribute, message, whenDone);
 	} else {
 		console.log('got an unknown message:', message);
 	}

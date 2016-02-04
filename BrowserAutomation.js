@@ -69,6 +69,17 @@ function mainRunner(bw, serviceName) {
 		onNextActionCompleted(callback);
 	}
 
+	this.getAttribute = function(cssSelector, attribute, callback) {
+		const message = {
+			action: 'getAttribute',
+			cssSelector: cssSelector,
+			attribute: attribute
+		}
+
+		sendToBrowser(message);
+		onNextActionCompleted(callback);
+	}
+
 	this.elementExists = function(cssSelector, callback) {
 		const message = {
 			action: 'elementExists',
@@ -97,6 +108,16 @@ function mainRunner(bw, serviceName) {
 		onNextPageLoad(callback);
 	}
 
+	this.gotoAndWaitForDownload = function(url, fileName, callback) {
+		const message = {
+			action: 'goto',
+			url: url
+		};
+
+		sendToBrowser(message);
+		onNextDownload(fileName, callback);
+	}
+
 	this.waitForCss = function(cssSelector, callback) {
 		const message = {
 			action: 'waitForCss',
@@ -109,7 +130,15 @@ function mainRunner(bw, serviceName) {
 
 	function sendToBrowser(data) {
 		console.log('sending message to browser: ', messageName, data)
-		bw.send(messageName, data);
+		if (bw.canReceiveOrder == true) {
+				bw.send(messageName, data);
+		} else {
+			console.log('can not receive order right now, postponing!');
+			setTimeout(function() {
+				sendToBrowser(data);
+			}, 500);
+		}
+
 	}
 
 	function onNextActionCompleted(callback) {
@@ -176,6 +205,7 @@ function mainRunner(bw, serviceName) {
 				console.log('lets go download :', requestOptions)
 				request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
 					console.log('DONE downloading!', fileFullPath);
+					bw.canReceiveOrder = true;
 					callback(null, fileFullPath);
 				});
 
