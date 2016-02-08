@@ -1,10 +1,18 @@
+'use strict';
+
 const ipcMain = require('electron').ipcMain;
+const immutable = require('immutable');
+const bluebird = require('bluebird');
+const mkdirpAsync = bluebird.promisify(require('mkdirp'));
+
 
 const messageName = 'invokeAction';
 
 function mainRunner(bw, serviceName) {
 
 	var filenameNB = 0;
+	var willDownloadMemory = immutable.Set();
+	var downloadedMemory = immutable.Set();
 
 	this.typeText = function(cssSelector, text, callback) {
 		const message = {
@@ -47,12 +55,14 @@ function mainRunner(bw, serviceName) {
 		onNextDownload(fileName, callback);
 	}
 
-	this.clickDeepAndWaitForDownload = function(firstCss, parentSteps, secondCss, fileName, callback) {
+	this.clickDeepAndWaitForDownload = function(firstCss, attribute, regAttr, parentSteps, secondCss, fileName, callback) {
 		const message = {
 			action: 'clickDeep',
 			firstCss: firstCss,
+			attribute: attribute,
+			regAttr: regAttr,
 			parentSteps: parentSteps,
-			secondCss: secondCss
+			secondCss: secondCss,
 		};
 
 		sendToBrowser(message);
@@ -128,9 +138,22 @@ function mainRunner(bw, serviceName) {
 		onNextActionCompleted(callback);
 	}
 
+	this.waitForDownload = function(service, date, callback) {
+		const message = {
+			action: 'waitForDownload',
+			service: service,
+			date: date
+		};
+
+		sendToBrowser(message);
+		onNextDownload(callback);
+
+
+	}
+
 	function sendToBrowser(data) {
 		console.log('sending message to browser: ', messageName, data)
-		if (bw.canReceiveOrder == true) {
+		if (bw.canReceiveOrder === true) {
 				bw.send(messageName, data);
 		} else {
 			console.log('can not receive order right now, postponing!');
@@ -162,16 +185,19 @@ function mainRunner(bw, serviceName) {
 		function didLoadFinishHandler() {
 			//ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
 			setTimeout(callback, 0);
-		};
+		}
 
 		bw.webContents.once('did-finish-load', didLoadFinishHandler);
 
 		//ipcMain.once('couldNotExecute', couldNotExecuteHandler);
 	}
 
-	function onNextDownload(targetFileName, callback) {
+	function onNextDownload(callback) {
 
 		function willDownloadHandler(event, item, webContents) {
+			const remoteFileName = item.getFilename();
+
+			willDownloadMemory  = willDownloadMemory.add(remoteFileName);
 			event.preventDefault();
 			console.log('will download!');
 
@@ -192,7 +218,7 @@ function mainRunner(bw, serviceName) {
 				});
 
 				if (ca) {
-					headers["Cookie"] = ca.join(';');
+					headers.Cookie = ca.join(';');
 				}
 
 				var fs = require('fs');
@@ -201,27 +227,30 @@ function mainRunner(bw, serviceName) {
 					headers: headers
 				}
 
-				const fileFullPath = __dirname+"/downloads/"+targetFileName;
-				console.log('lets go download :', requestOptions)
-				request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
-					console.log('DONE downloading!', fileFullPath);
-					bw.canReceiveOrder = true;
-					callback(null, fileFullPath);
-				});
+				const filePath = __dirname+"/downloads/"+serviceName+"/";
+				mkdirpAsync(filePath)
+				.then(() => {
+					const fileFullPath = filePath + remoteFileName;
+
+					console.log('lets go download :', requestOptions)
+					request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
+						console.log('DONE downloading!', fileFullPath);
+						bw.canReceiveOrder = true;
+						downloadedMemory = downloadedMemory.add(remoteFileName);
+						bw.send('downloadNext');
+						// callback(null, fileFullPath);
+					});
+				})
 
 			});
 
-			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
-		}
 
-		function couldNotExecuteHandler() {
+		}
+		bw.webContents.session.on('will-download', willDownloadHandler);
+		ipcMain.on('doneDownloading', () => {
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
-			setTimeout(callback, 0);
-
-		}
-
-		bw.webContents.session.once('will-download', willDownloadHandler);
-		ipcMain.once('couldNotExecute', couldNotExecuteHandler);
+			callback();
+		});
 	}
 }
 

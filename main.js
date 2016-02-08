@@ -1,9 +1,10 @@
 'use strict';
 
 const electron = require('electron');
-const bluebird = require('bluebird');
-const uuid = require('node-uuid');
-const lodash = require('lodash');
+
+// const uuid = require('node-uuid');
+// const lodash = require('lodash');
+const ipcMain = require('electron').ipcMain;
 
 
 
@@ -43,7 +44,7 @@ function createWindow () {
   mainWindow.webContents.on('did-finish-load', function() {
 
 
-    var bw = mainWindow;
+
     console.log('starting __hellobill.runLoop()');
     mainWindow.webContents.executeJavaScript("__hellobill.runLoop()");
     mainWindow.webContents.session.setDownloadPath(__dirname+'/downloads/');
@@ -60,13 +61,18 @@ function createWindow () {
     mainWindow.canReceiveOrder = false;
   })
 
+  ipcMain.on('remoteLog', function(sender, message) {
+
+    console.log('< ' + message.message)
+  })
+
   mainWindow.webContents.once('did-finish-load', function() {
     //here is the github runner originally
-    const GithubConnector = require('./lib/connectors/github');
-    const GoogleConnector = require('./lib/connectors/google');
-    const SkypeConnector = require('./lib/connectors/skype');
+    // const GithubConnector = require('./lib/connectors/github');
+    // const GoogleConnector = require('./lib/connectors/google');
+    // const SkypeConnector = require('./lib/connectors/skype');
     const AdobeConnector = require('./lib/connectors/adobe');
-    const date = "2011-11";
+    const date = "2015-12";
 
     const adobe = new AdobeConnector(mainWindow);
     // const skype = new SkypeConnector(mainWindow);
