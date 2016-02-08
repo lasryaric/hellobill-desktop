@@ -6,7 +6,7 @@ function download(date, offset) {
   const _ = window.__hellobill.utils._;
   const moment = window.__hellobill.utils.moment;
 
-  const regStr = ".*";// moment(date, "YYYY-MM").format("MMM [.*,] YYYY");
+  const regStr = moment(date, "YYYY-MM").format("MMM [.*,] YYYY");
 
 
   const allElements = document.querySelectorAll("[name='billingListItem1']");
@@ -18,7 +18,7 @@ function download(date, offset) {
 
     return dateText.match(regStr)
   });
-  if (okElements.lenght >= offset) {
+  if (offset >= okElements.lenght) {
     window.__hellobill.ipc.send('doneDownloading');
     return ;
   }

@@ -145,7 +145,7 @@ function runnerWaitForCss(cssSelector, originalMessage, callback) {
 function runnerDownload(serviceName, date, originalMessage) {
 	const downloader = window.__hb.downloaders[serviceName];
 
-	remoteLog('runnerDownload with :', serviceName, date)
+	remoteLog('runnerDownload with serviceName: '+ serviceName+' date:' + date)
 	downloader.download(date);
 }
 

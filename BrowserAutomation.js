@@ -232,7 +232,7 @@ function mainRunner(bw, serviceName) {
 				.then(() => {
 					const fileFullPath = filePath + remoteFileName;
 
-					console.log('lets go download :', requestOptions)
+					console.log('lets go download :', fileURL.href)
 					request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
 						console.log('DONE downloading!', fileFullPath);
 						bw.canReceiveOrder = true;
@@ -250,6 +250,7 @@ function mainRunner(bw, serviceName) {
 		ipcMain.on('doneDownloading', () => {
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			callback();
+			console.log('done downloading for service: ', serviceName);
 		});
 	}
 }

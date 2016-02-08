@@ -68,18 +68,23 @@ function createWindow () {
 
   mainWindow.webContents.once('did-finish-load', function() {
     //here is the github runner originally
-    // const GithubConnector = require('./lib/connectors/github');
+    const GithubConnector = require('./lib/connectors/github');
     // const GoogleConnector = require('./lib/connectors/google');
     // const SkypeConnector = require('./lib/connectors/skype');
     const AdobeConnector = require('./lib/connectors/adobe');
     const date = "2015-12";
 
-    const adobe = new AdobeConnector(mainWindow);
+    // const adobe = new AdobeConnector(mainWindow);
     // const skype = new SkypeConnector(mainWindow);
-    // const github = new GithubConnector(mainWindow);
+    const github = new GithubConnector(mainWindow);
 
-    adobe
+    github
     .runAsync(date)
+    .then(() => {
+      const adobe = new AdobeConnector(mainWindow);
+
+      return adobe.runAsync(date);
+    })
     /*
     .then(() => {
       return skype.runAsync(date)
