@@ -211,8 +211,14 @@ function mainRunner(bw, serviceName) {
 			}
 
 			bw.webContents.session.cookies.get({}, function(err, cookies) {
-				// console.log('cookies:', cookies, fileURL)
-				var ca = cookies.map(function(v) {
+				const cookiesForDomain = cookies.filter((cookie) => {
+					if (fileURL.host.indexOf(cookie.domain) > -1) {
+						return true;
+					}
+
+					return false;
+				});
+				var ca = cookiesForDomain.map(function(v) {
 
 					return v.name+"="+v.value;
 				});
@@ -220,6 +226,8 @@ function mainRunner(bw, serviceName) {
 				if (ca) {
 					headers.Cookie = ca.join(';');
 				}
+
+				console.log('headers are: ', headers.Cookie.length)
 
 				var fs = require('fs');
 				var requestOptions = {

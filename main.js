@@ -70,32 +70,29 @@ function createWindow () {
     //here is the github runner originally
     const GithubConnector = require('./lib/connectors/github');
     // const GoogleConnector = require('./lib/connectors/google');
-    // const SkypeConnector = require('./lib/connectors/skype');
+    const SkypeConnector = require('./lib/connectors/skype');
     const AdobeConnector = require('./lib/connectors/adobe');
     const date = "2015-12";
 
-    // const adobe = new AdobeConnector(mainWindow);
-    // const skype = new SkypeConnector(mainWindow);
+    const adobe = new AdobeConnector(mainWindow);
+    const skype = new SkypeConnector(mainWindow);
     const github = new GithubConnector(mainWindow);
 
-    github
-    .runAsync(date)
-    .then(() => {
-      const adobe = new AdobeConnector(mainWindow);
+    function runThem(list, date) {
+      if (list.length === 0) {
+        return ;
+      }
+      const q = list.shift();
+      q.runAsync(date)
+      .then(() => {
+        runThem(list, date);
+      });
+    }
 
-      return adobe.runAsync(date);
-    })
-    /*
-    .then(() => {
-      return skype.runAsync(date)
-    })
-    .then(() => {
-      return github.runAsync(date)
-    })
-    .then(() => {
-      console.log('done with all connectors')
-    })
-    */
+    var list = [adobe, github];
+    
+    runThem(list, date);
+
   });
 }
 

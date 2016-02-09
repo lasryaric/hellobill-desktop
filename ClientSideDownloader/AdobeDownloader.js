@@ -18,7 +18,7 @@ function download(date, offset) {
 
     return dateText.match(regStr)
   });
-  if (offset >= okElements.lenght) {
+  if (offset >= okElements.length) {
     window.__hellobill.ipc.send('doneDownloading');
     return ;
   }
