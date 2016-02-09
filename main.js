@@ -1,7 +1,7 @@
 'use strict';
 
 const electron = require('electron');
-
+require("babel-register");
 // const uuid = require('node-uuid');
 // const lodash = require('lodash');
 const ipcMain = require('electron').ipcMain;
@@ -19,17 +19,26 @@ const BrowserWindow = electron.BrowserWindow;
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow;
 
+let appWindow;
+
 
 function createWindow () {
   // Create the browser window.
   var preload = __dirname + "/preload.js";
-  mainWindow = new BrowserWindow({width: 1200, height: 600, preload: preload, nodeIntegration: false, show:true});
+  mainWindow = new BrowserWindow({width: 1200, height: 600, preload: preload, nodeIntegration: false, show:false});
+
+  appWindow = new BrowserWindow({width: 1200, height: 600, preload: preload, nodeIntegration: true, show:true,
+    "web-preferences": {
+       "web-security": false
+     }});
 
   mainWindow.loadURL('file://' + __dirname + '/index.html');
+  appWindow.loadURL('http://localhost:3004/desktophome');
 
 
 
   mainWindow.webContents.openDevTools();
+  appWindow.webContents.openDevTools();
 
 
 
@@ -41,6 +50,7 @@ function createWindow () {
 
     mainWindow = null;
   });
+
 
   mainWindow.webContents.on('did-finish-load', function() {
 
@@ -65,6 +75,10 @@ function createWindow () {
   ipcMain.on('remoteLog', function(sender, message) {
 
     console.log('< ' + message.message)
+  })
+
+  ipcMain.on('authenticationOk', () => {
+    console.log(' ************* got login ok message!');
   })
 
   mainWindow.webContents.once('did-finish-load', function() {
@@ -96,11 +110,11 @@ function createWindow () {
 
     var list = [skype, adobe, github];
 
-
-    runThem(list, date, () => {
-      app.quit();
-
-    });
+    //
+    // runThem(list, date, () => {
+    //   app.quit();
+    //
+    // });
 
   });
 }
