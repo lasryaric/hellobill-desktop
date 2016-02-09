@@ -45,30 +45,6 @@ function mainRunner(bw, serviceName) {
 		onNextPageLoad(callback);
 	}
 
-	this.clickAndWaitForDownload = function(cssSelector, fileName, callback) {
-		const message = {
-			action: 'click',
-			cssSelector: cssSelector,
-		};
-
-		sendToBrowser(message);
-		onNextDownload(fileName, callback);
-	}
-
-	this.clickDeepAndWaitForDownload = function(firstCss, attribute, regAttr, parentSteps, secondCss, fileName, callback) {
-		const message = {
-			action: 'clickDeep',
-			firstCss: firstCss,
-			attribute: attribute,
-			regAttr: regAttr,
-			parentSteps: parentSteps,
-			secondCss: secondCss,
-		};
-
-		sendToBrowser(message);
-		onNextDownload(fileName, callback);
-	}
-
 	this.getInnerHTML = function(cssSelector, callback) {
 		const message = {
 			action: 'getInnerHTML',
@@ -118,15 +94,6 @@ function mainRunner(bw, serviceName) {
 		onNextPageLoad(callback);
 	}
 
-	this.gotoAndWaitForDownload = function(url, fileName, callback) {
-		const message = {
-			action: 'goto',
-			url: url
-		};
-
-		sendToBrowser(message);
-		onNextDownload(fileName, callback);
-	}
 
 	this.waitForCss = function(cssSelector, callback) {
 		const message = {
@@ -142,11 +109,11 @@ function mainRunner(bw, serviceName) {
 		const message = {
 			action: 'waitForDownload',
 			service: service,
-			date: date
+			date: date.format("YYYY-MM"),
 		};
 
 		sendToBrowser(message);
-		onNextDownload(callback);
+		onNextDownload(date, callback);
 
 
 	}
@@ -192,7 +159,7 @@ function mainRunner(bw, serviceName) {
 		//ipcMain.once('couldNotExecute', couldNotExecuteHandler);
 	}
 
-	function onNextDownload(callback) {
+	function onNextDownload(dateInstance, callback) {
 
 		function willDownloadHandler(event, item, webContents) {
 			const remoteFileName = item.getFilename();
@@ -235,7 +202,8 @@ function mainRunner(bw, serviceName) {
 					headers: headers
 				}
 
-				const filePath = __dirname+"/downloads/"+serviceName+"/";
+				const dateStr = dateInstance.format("YYYY-MM");
+				const filePath = __dirname+"/downloads/"+dateStr+"/"+serviceName+"/";
 				mkdirpAsync(filePath)
 				.then(() => {
 					const fileFullPath = filePath + remoteFileName;

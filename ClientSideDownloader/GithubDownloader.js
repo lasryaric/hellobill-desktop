@@ -23,14 +23,23 @@ function download(date, offset) {
     return ;
   }
 
-  const a = okElements[offset].parentElement.parentElement.querySelector('.receipt a');
+  var a = okElements[offset];
+  a = a && a.parentElement;
+  a = a && a.parentElement;
+  a = a && a.querySelector('.receipt a');
 
   function downloadNextHandler() {
     download(date, offset + 1);
   }
+
   window.__hellobill.ipc.once('downloadNext', downloadNextHandler);
 
-  a.click();
+  if (a) {
+    a.click();
+  } else {
+    window.__hellobill.ipc.removeListener('downloadNext', downloadNextHandler);
+    downloadNextHandler();
+  }
 }
 
 module.exports = {

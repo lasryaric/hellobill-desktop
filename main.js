@@ -5,6 +5,7 @@ const electron = require('electron');
 // const uuid = require('node-uuid');
 // const lodash = require('lodash');
 const ipcMain = require('electron').ipcMain;
+const moment = require('moment');
 
 
 
@@ -72,14 +73,18 @@ function createWindow () {
     // const GoogleConnector = require('./lib/connectors/google');
     const SkypeConnector = require('./lib/connectors/skype');
     const AdobeConnector = require('./lib/connectors/adobe');
-    const date = "2015-12";
+    const date = moment("2016-01", "YYYY-MM");
 
     const adobe = new AdobeConnector(mainWindow);
     const skype = new SkypeConnector(mainWindow);
     const github = new GithubConnector(mainWindow);
 
-    function runThem(list, date) {
+    function runThem(list, date, callback) {
       if (list.length === 0) {
+        if (callback) {
+          callback();
+        }
+
         return ;
       }
       const q = list.shift();
@@ -89,9 +94,13 @@ function createWindow () {
       });
     }
 
-    var list = [adobe, github];
-    
-    runThem(list, date);
+    var list = [skype, adobe, github];
+
+
+    runThem(list, date, () => {
+      app.quit();
+
+    });
 
   });
 }
