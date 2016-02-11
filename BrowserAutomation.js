@@ -222,12 +222,20 @@ function mainRunner(bw, serviceName) {
 
 
 		}
-		bw.webContents.session.on('will-download', willDownloadHandler);
-		ipcMain.on('doneDownloading', () => {
+
+		function doneDownloadingHandler()  {
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			callback();
 			console.log('done downloading for service: ', serviceName);
-		});
+		}
+
+		bw.webContents.session.on('will-download', willDownloadHandler);
+		ipcMain.on('doneDownloading', doneDownloadingHandler);
+
+		bw.on('close', function() {
+			bw.webContents.session.removeListener('will-download', willDownloadHandler);
+			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
+		})
 	}
 }
 
