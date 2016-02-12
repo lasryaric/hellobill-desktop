@@ -48,6 +48,10 @@ function createWindow () {
     })
   })
 
+  ipcMain.on('selectDestinationFolder', function() {
+    const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
+    console.log('selected folder is: ', selectedFolder);
+  })
 }
 
 // This method will be called when Electron has finished
