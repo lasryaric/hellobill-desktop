@@ -12,6 +12,8 @@ const app = electron.app;
 // Module to create native browser window.
 const BrowserWindow = electron.BrowserWindow;
 
+var mUserMe = null;
+
 
 let appWindow;
 
@@ -40,17 +42,34 @@ function createWindow () {
   })
 
   ipcMain.on('fetchMyBills', function(a, data)  {
+    appWindow.webContents.send('ConnectorsStatus', 'running');
     const date = moment("2016-01", "YYYY-MM");
 
-
-    connectorsRunner(data, date, () => {
+    console.log('running connector runner with: ', mUserMe, data, date)
+    connectorsRunner(mUserMe, data, date, () => {
       console.log('done running all connectors!');
+      appWindow.webContents.send('ConnectorsStatus', 'idle');
     })
   })
 
   ipcMain.on('selectDestinationFolder', function() {
+    function saveDestinationFolder(destinationFolder) {
+      appWindow.webContents.send('saveDestinationFolder', destinationFolder);
+    }
     const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
-    console.log('selected folder is: ', selectedFolder);
+    if (selectedFolder !== undefined) {
+      saveDestinationFolder(selectedFolder);
+      console.log('selected folder is: ', selectedFolder);
+    } else {
+      console.log('select folder cancel')
+    }
+
+  })
+
+  ipcMain.on('userMe', function(ax, mUser) {
+    console.log('updating userMe: ', mUser);
+
+    mUserMe = mUser;
   })
 }
 

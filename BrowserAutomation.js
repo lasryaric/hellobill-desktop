@@ -8,8 +8,9 @@ const mkdirpAsync = bluebird.promisify(require('mkdirp'));
 
 const messageName = 'invokeAction';
 
-function mainRunner(bw, serviceName) {
+function mainRunner(bw, serviceName, destinationFolder) {
 
+	console.log('mainRunner: destinationFolder:', destinationFolder)
 	var filenameNB = 0;
 	var willDownloadMemory = immutable.Set();
 	var downloadedMemory = immutable.Set();
@@ -203,7 +204,7 @@ function mainRunner(bw, serviceName) {
 				}
 
 				const dateStr = dateInstance.format("YYYY-MM");
-				const filePath = __dirname+"/downloads/"+dateStr+"/"+serviceName+"/";
+				const filePath = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
 				mkdirpAsync(filePath)
 				.then(() => {
 					const fileFullPath = filePath + remoteFileName;
