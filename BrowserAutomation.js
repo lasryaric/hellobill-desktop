@@ -4,11 +4,17 @@ const ipcMain = require('electron').ipcMain;
 const immutable = require('immutable');
 const bluebird = require('bluebird');
 const mkdirpAsync = bluebird.promisify(require('mkdirp'));
-
+const EventEmitter = require('events');
 
 const messageName = 'invokeAction';
 
+class MyEmitter extends EventEmitter {}
+
 function mainRunner(bw, serviceName, destinationFolder) {
+
+	this.emitter = new MyEmitter();
+	var self = this;
+	var _errorTimeout = null;
 
 	console.log('mainRunner: destinationFolder:', destinationFolder)
 	var filenameNB = 0;
@@ -123,6 +129,7 @@ function mainRunner(bw, serviceName, destinationFolder) {
 		console.log('sending message to browser: ', messageName, data)
 		if (bw.canReceiveOrder === true) {
 				bw.send(messageName, data);
+				scheduleErrorTimeout();
 		} else {
 			console.log('can not receive order right now, postponing!');
 			setTimeout(function() {
@@ -134,6 +141,7 @@ function mainRunner(bw, serviceName, destinationFolder) {
 
 	function onNextActionCompleted(callback) {
 		ipcMain.once('doneExecuting', function(event, args) {
+			clearErrorTimeout();
 			console.log('got done doneExecuting message', args);
 			setTimeout(function() {
 				callback(null, args)
@@ -144,25 +152,20 @@ function mainRunner(bw, serviceName, destinationFolder) {
 
 	function onNextPageLoad(callback) {
 
-		function couldNotExecuteHandler() {
-			console.log('got could not execute!')
-			bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
-			setTimeout(callback, 0);
-		}
-
 		function didLoadFinishHandler() {
-			//ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
 
 		bw.webContents.once('did-finish-load', didLoadFinishHandler);
 
-		//ipcMain.once('couldNotExecute', couldNotExecuteHandler);
+
 	}
 
 	function onNextDownload(dateInstance, callback) {
 
 		function willDownloadHandler(event, item, webContents) {
+			clearErrorTimeout();
 			const remoteFileName = item.getFilename();
 
 			willDownloadMemory  = willDownloadMemory.add(remoteFileName);
@@ -215,6 +218,7 @@ function mainRunner(bw, serviceName, destinationFolder) {
 						bw.canReceiveOrder = true;
 						downloadedMemory = downloadedMemory.add(remoteFileName);
 						bw.send('downloadNext');
+						scheduleErrorTimeout();
 						// callback(null, fileFullPath);
 					});
 				})
@@ -225,19 +229,51 @@ function mainRunner(bw, serviceName, destinationFolder) {
 		}
 
 		function doneDownloadingHandler()  {
+			clearErrorTimeout();
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			callback();
 			console.log('done downloading for service: ', serviceName);
 		}
 
+
+
 		bw.webContents.session.on('will-download', willDownloadHandler);
 		ipcMain.on('doneDownloading', doneDownloadingHandler);
+
 
 		bw.on('close', function() {
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
+			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
 		})
 	}
+
+	function scheduleErrorTimeout() {
+		_errorTimeout = setTimeout(() => {
+			self.emitter.emit('error', "did not hear back from the browser after 10 seconds");
+		}, 10000);
+	}
+
+	function clearErrorTimeout() {
+		if (_errorTimeout) {
+			clearTimeout(_errorTimeout);
+			_errorTimeout = null;
+		}
+	}
+
+	function couldNotExecuteHandler(ax, errorData) {
+		clearErrorTimeout();
+		console.log('got a couldNotExecute from browser with errorData: ', errorData)
+		self.emitter.emit('error', errorData)
+	}
+
+	ipcMain.on('couldNotExecute', couldNotExecuteHandler);
+	bw.on('close', function() {
+		ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+	})
+
+
+	bluebird.promisifyAll(this);
 }
 
 module.exports = mainRunner;

@@ -45,12 +45,22 @@ function createWindow () {
     appWindow.webContents.send('ConnectorsStatus', 'running');
     const date = moment("2016-01", "YYYY-MM");
 
-    console.log('running connector runner with: ', mUserMe, data, date)
-    connectorsRunner(mUserMe, data, date, () => {
+    console.log('running connector')
+    var csr = new connectorsRunner();
+    csr.on('error', (err) => {
+      console.log('i got an error.....................................', err)
+    });
+
+    csr.runThem(mUserMe, data, date, (err) => {
+      if (err) {
+        console.log('got an error! Stopped!', err);
+        return ;
+      }
       console.log('done running all connectors!');
       appWindow.webContents.send('ConnectorsStatus', 'idle');
     })
   })
+
 
   ipcMain.on('selectDestinationFolder', function() {
     function saveDestinationFolder(destinationFolder) {
