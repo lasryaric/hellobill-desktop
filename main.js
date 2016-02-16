@@ -37,18 +37,19 @@ function createWindow () {
     console.log('< ' + message.message)
   })
 
-  ipcMain.on('authenticationOk', () => {
-    console.log(' ************* got login ok message!');
-  })
-
   ipcMain.on('fetchMyBills', function(a, data)  {
     appWindow.webContents.send('ConnectorsStatus', 'running');
-    const date = moment("2016-01", "YYYY-MM");
+    const date = moment("2015-12", "YYYY-MM");
 
     console.log('running connector')
     var csr = new connectorsRunner();
     csr.on('error', (err) => {
-      console.log('i got an error.....................................', err)
+      const errorData = {
+        errorMessage: err.message,
+        errorName: err.name,
+        modelConnector: err.modelConnector
+      }
+      appWindow.webContents.send('ConnectorError', errorData);
     });
 
     csr.runThem(mUserMe, data, date, (err) => {

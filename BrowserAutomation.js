@@ -5,6 +5,8 @@ const immutable = require('immutable');
 const bluebird = require('bluebird');
 const mkdirpAsync = bluebird.promisify(require('mkdirp'));
 const EventEmitter = require('events');
+const errors = require('./errors/errors')
+const config = require('./config/config.json');
 
 const messageName = 'invokeAction';
 
@@ -15,11 +17,23 @@ function mainRunner(bw, serviceName, destinationFolder) {
 	this.emitter = new MyEmitter();
 	var self = this;
 	var _errorTimeout = null;
+	var isClosing = false;
 
 	console.log('mainRunner: destinationFolder:', destinationFolder)
 	var filenameNB = 0;
 	var willDownloadMemory = immutable.Set();
 	var downloadedMemory = immutable.Set();
+
+	function safeBrowserWindowSync(callback) {
+		if (isClosing === true) {
+			throw new Error("we are closing, sorry");
+			console.log('calling a closing browser window instance for ', serviceName);
+
+			return ;
+		}
+
+		callback(bw);
+	}
 
 	this.typeText = function(cssSelector, text, callback) {
 		const message = {
@@ -125,40 +139,50 @@ function mainRunner(bw, serviceName, destinationFolder) {
 
 	}
 
+	this.setIsClosing = function() {
+		isClosing = true;
+	}
+
 	function sendToBrowser(data) {
 		console.log('sending message to browser: ', messageName, data)
-		if (bw.canReceiveOrder === true) {
+		safeBrowserWindowSync((bw) => {
+			if (bw.canReceiveOrder === true) {
 				bw.send(messageName, data);
 				scheduleErrorTimeout();
-		} else {
-			console.log('can not receive order right now, postponing!');
-			setTimeout(function() {
-				sendToBrowser(data);
-			}, 500);
-		}
+			} else {
+				console.log('can not receive order right now, postponing!');
+				setTimeout(function() {
+					sendToBrowser(data);
+				}, 500);
+			}
+		})
 
 	}
 
+
+	var onNextActionCompletedHandler = null;
 	function onNextActionCompleted(callback) {
-		ipcMain.once('doneExecuting', function(event, args) {
+		onNextActionCompletedHandler = function (event, args) {
 			clearErrorTimeout();
 			console.log('got done doneExecuting message', args);
-			setTimeout(function() {
-				callback(null, args)
-			}, 0);
 
-		});
+			callback(null, args)
+
+
+		}
+		ipcMain.once('doneExecuting', onNextActionCompletedHandler);
 	}
 
-	function onNextPageLoad(callback) {
 
-		function didLoadFinishHandler() {
+	var didLoadFinishHandler = null;
+	function onNextPageLoad(callback) {
+		didLoadFinishHandler = function () {
 			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
-
-		bw.webContents.once('did-finish-load', didLoadFinishHandler);
-
+		safeBrowserWindowSync((bw) => {
+			bw.webContents.once('did-finish-load', didLoadFinishHandler);
+		})
 
 	}
 
@@ -180,91 +204,101 @@ function mainRunner(bw, serviceName, destinationFolder) {
 			var headers = {
 				"Cookie": null
 			}
+			safeBrowserWindowSync((bw) => {
+				bw.webContents.session.cookies.get({}, function(err, cookies) {
+					const cookiesForDomain = cookies.filter((cookie) => {
+						if (fileURL.host.indexOf(cookie.domain) > -1) {
+							return true;
+						}
 
-			bw.webContents.session.cookies.get({}, function(err, cookies) {
-				const cookiesForDomain = cookies.filter((cookie) => {
-					if (fileURL.host.indexOf(cookie.domain) > -1) {
-						return true;
+						return false;
+					});
+					var ca = cookiesForDomain.map(function(v) {
+
+						return v.name+"="+v.value;
+					});
+
+					if (ca) {
+						headers.Cookie = ca.join(';');
 					}
 
-					return false;
+					console.log('headers are: ', headers.Cookie.length)
+
+					var fs = require('fs');
+					var requestOptions = {
+						uri: fileURL.href,
+						headers: headers
+					}
+
+					const dateStr = dateInstance.format("YYYY-MM");
+					const filePath = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
+					mkdirpAsync(filePath)
+					.then(() => {
+						const fileFullPath = filePath + remoteFileName;
+
+						console.log('lets go download :', fileURL.href)
+						request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
+							console.log('DONE downloading!', fileFullPath);
+							bw.canReceiveOrder = true;
+							downloadedMemory = downloadedMemory.add(remoteFileName);
+							bw.send('downloadNext');
+							scheduleErrorTimeout();
+							// callback(null, fileFullPath);
+						});
+					})
+
 				});
-				var ca = cookiesForDomain.map(function(v) {
-
-					return v.name+"="+v.value;
-				});
-
-				if (ca) {
-					headers.Cookie = ca.join(';');
-				}
-
-				console.log('headers are: ', headers.Cookie.length)
-
-				var fs = require('fs');
-				var requestOptions = {
-					uri: fileURL.href,
-					headers: headers
-				}
-
-				const dateStr = dateInstance.format("YYYY-MM");
-				const filePath = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
-				mkdirpAsync(filePath)
-				.then(() => {
-					const fileFullPath = filePath + remoteFileName;
-
-					console.log('lets go download :', fileURL.href)
-					request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
-						console.log('DONE downloading!', fileFullPath);
-						bw.canReceiveOrder = true;
-						downloadedMemory = downloadedMemory.add(remoteFileName);
-						bw.send('downloadNext');
-						scheduleErrorTimeout();
-						// callback(null, fileFullPath);
-					});
-				})
 
 			});
-
 
 		}
 
 		function doneDownloadingHandler()  {
 			clearErrorTimeout();
-			bw.webContents.session.removeListener('will-download', willDownloadHandler);
+			safeBrowserWindowSync((bw) => {
+				bw.webContents.session.removeListener('will-download', willDownloadHandler);
+			})
 			callback();
 			console.log('done downloading for service: ', serviceName);
 		}
 
 
-
-		bw.webContents.session.on('will-download', willDownloadHandler);
+		safeBrowserWindowSync((bw) => {
+			bw.webContents.session.on('will-download', willDownloadHandler);
+		});
 		ipcMain.on('doneDownloading', doneDownloadingHandler);
 
 
 		bw.on('close', function() {
+			isClosing = true;
 			bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
 			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
+			bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
+			ipcMain.removeListener('doneExecuting', onNextActionCompletedHandler);
 		})
 	}
 
 	function scheduleErrorTimeout() {
 		_errorTimeout = setTimeout(() => {
-			self.emitter.emit('error', "did not hear back from the browser after 10 seconds");
+			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
+			self.emitter.emit('error', err);
 		}, 10000);
 	}
 
 	function clearErrorTimeout() {
-		if (_errorTimeout) {
+		if (_errorTimeout !== null) {
+			console.log('clearing timeout')
 			clearTimeout(_errorTimeout);
 			_errorTimeout = null;
 		}
 	}
 
-	function couldNotExecuteHandler(ax, errorData) {
+	function couldNotExecuteHandler(ax, errorMessage) {
 		clearErrorTimeout();
-		console.log('got a couldNotExecute from browser with errorData: ', errorData)
-		self.emitter.emit('error', errorData)
+		console.log('got a couldNotExecute from browser with errorData: ', errorMessage);
+		const err = new errors.ConnectorErrorCouldNotExecute(errorMessage);
+		self.emitter.emit('error', err);
 	}
 
 	ipcMain.on('couldNotExecute', couldNotExecuteHandler);
