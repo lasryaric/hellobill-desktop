@@ -43,7 +43,12 @@ function createWindow () {
 
     console.log('running connector')
     var csr = new connectorsRunner();
-    csr.on('error', (err) => {
+    csr
+    .on('succeed', (modelConnector) => {
+      appWindow.webContents.send('ConnectorSucceed', modelConnector);
+    })
+    .on('error', (err) => {
+      console.log('got an error emitted from connectorsRunner')
       const errorData = {
         errorMessage: err.message,
         errorName: err.name,

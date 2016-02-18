@@ -98,6 +98,7 @@ function mainRunner(bw, serviceName, destinationFolder) {
 	}
 
 	this.waitForPage = function(callback) {
+		noOpToBrowser();
 		onNextPageLoad(callback);
 	}
 
@@ -141,6 +142,10 @@ function mainRunner(bw, serviceName, destinationFolder) {
 
 	this.setIsClosing = function() {
 		isClosing = true;
+	}
+
+	function noOpToBrowser() {
+		scheduleErrorTimeout();
 	}
 
 	function sendToBrowser(data) {
@@ -237,14 +242,32 @@ function mainRunner(bw, serviceName, destinationFolder) {
 						const fileFullPath = filePath + remoteFileName;
 
 						console.log('lets go download :', fileURL.href)
-						request(requestOptions).pipe(fs.createWriteStream(fileFullPath)).on('close', function() {
+						request(requestOptions)
+						.on('error', function(err) {
+							const customError = new errors.ConnectorErrorDownload(err.message);
+							self.emitter.emit('error', customError)
+						})
+						.on('response', function(response) {
+								console.log('download response code:', response.statusCode)
+								if (response.statusCode < 200 || response.statusCode >= 400) {
+										this.emit('error', new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
+								}
+
+						})
+						.pipe(fs.createWriteStream(fileFullPath))
+						.on('close', function() {
 							console.log('DONE downloading!', fileFullPath);
 							bw.canReceiveOrder = true;
 							downloadedMemory = downloadedMemory.add(remoteFileName);
 							bw.send('downloadNext');
-							scheduleErrorTimeout();
-							// callback(null, fileFullPath);
-						});
+							
+						})
+						.on('error', function(err) {
+							console.log('writting error:', err)
+							const customError = new errors.ConnectorErrorDownload("Could not write the file at the following location: "+ err.path);
+							self.emitter.emit('error', customError)
+						})
+
 					})
 
 				});
@@ -279,11 +302,12 @@ function mainRunner(bw, serviceName, destinationFolder) {
 		})
 	}
 
-	function scheduleErrorTimeout() {
+	function scheduleErrorTimeout(timeoutMillisec) {
+		timeoutMillisec = timeoutMillisec || 10 * 1000;
 		_errorTimeout = setTimeout(() => {
 			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
 			self.emitter.emit('error', err);
-		}, 10000);
+		}, timeoutMillisec);
 	}
 
 	function clearErrorTimeout() {
