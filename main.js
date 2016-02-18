@@ -4,6 +4,7 @@ const electron = require('electron');
 const ipcMain = require('electron').ipcMain;
 const connectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
+const _ = require('lodash');
 
 
 
@@ -40,12 +41,20 @@ function createWindow () {
   ipcMain.on('fetchMyBills', function(a, data)  {
     appWindow.webContents.send('ConnectorsStatus', 'running');
     const date = moment("2015-12", "YYYY-MM");
+    const dateStarted = moment();
+    const trackEventName = "fetch_bills";
+    const trackEventProps = {
+      fetch_range: date.format('YYYY-MM')
+    };
+    const trackEventConnectorsStatus = {
 
+    };
     console.log('running connector')
     var csr = new connectorsRunner();
     csr
     .on('succeed', (modelConnector) => {
       appWindow.webContents.send('ConnectorSucceed', modelConnector);
+      trackEventConnectorsStatus['connector_'+modelConnector.name] = 'ok';
     })
     .on('error', (err) => {
       console.log('got an error emitted from connectorsRunner')
@@ -54,16 +63,22 @@ function createWindow () {
         errorName: err.name,
         modelConnector: err.modelConnector
       }
+      trackEventConnectorsStatus['connector_'+err.modelConnector.name] = err.name;
       appWindow.webContents.send('ConnectorError', errorData);
     });
 
     csr.runThem(mUserMe, data, date, (err) => {
       if (err) {
-        console.log('got an error! Stopped!', err);
+        console.log('Done running all connectors but some of them failed.', err);
         return ;
       }
+      const dateEnded = moment();
+      const elapsedSeconds = parseInt(dateEnded.format("s"), 10) - parseInt(dateStarted.format('s'), 10);
+      trackEventProps.elapsedSeconds = elapsedSeconds;
+      _.merge(trackEventProps, trackEventConnectorsStatus);
       console.log('done running all connectors!');
       appWindow.webContents.send('ConnectorsStatus', 'idle');
+      IntercomTrackIpc(trackEventName, trackEventProps);
     })
   })
 
@@ -76,8 +91,9 @@ function createWindow () {
     if (selectedFolder !== undefined) {
       saveDestinationFolder(selectedFolder);
       console.log('selected folder is: ', selectedFolder);
+      IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
     } else {
-      console.log('select folder cancel')
+      IntercomTrackIpc('cancel_selection_folder')
     }
 
   })
@@ -109,3 +125,12 @@ app.on('activate', function () {
     createWindow();
   }
 });
+
+function IntercomTrackIpc(name, props) {
+  console.log('IntercomTrackIpc: ', arguments);
+
+  appWindow.webContents.send('IntercomTrack', {
+    eventName: name,
+    eventProps: props
+  });
+}
