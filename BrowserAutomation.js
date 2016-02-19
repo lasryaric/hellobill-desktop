@@ -7,12 +7,15 @@ const mkdirpAsync = bluebird.promisify(require('mkdirp'));
 const EventEmitter = require('events');
 const errors = require('./errors/errors')
 const config = require('./config/config.json');
+const checksum = require('checksum');
+
+bluebird.promisifyAll(checksum);
 
 const messageName = 'invokeAction';
 
 class MyEmitter extends EventEmitter {}
 
-function mainRunner(bw, serviceName, destinationFolder) {
+function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	this.emitter = new MyEmitter();
 	var self = this;
@@ -260,7 +263,18 @@ function mainRunner(bw, serviceName, destinationFolder) {
 							bw.canReceiveOrder = true;
 							downloadedMemory = downloadedMemory.add(remoteFileName);
 							bw.send('downloadNext');
-							
+
+							checksum
+							.fileAsync(fileFullPath)
+							.then((fileHash) => {
+
+								self.emitter.emit('fileDownloaded', {
+									fileHash: fileHash,
+									fileName: remoteFileName,
+									connectorID: modelConnector._id
+								})
+							})
+
 						})
 						.on('error', function(err) {
 							console.log('writting error:', err)

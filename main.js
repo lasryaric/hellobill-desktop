@@ -8,6 +8,7 @@ const _ = require('lodash');
 
 
 
+
 // Module to control application life.
 const app = electron.app;
 // Module to create native browser window.
@@ -55,6 +56,9 @@ function createWindow () {
     .on('succeed', (modelConnector) => {
       appWindow.webContents.send('ConnectorSucceed', modelConnector);
       trackEventConnectorsStatus['connector_'+modelConnector.name] = 'ok';
+    })
+    .on('fileDownloaded', (data) => {
+      appWindow.webContents.send('fileDownloaded', data);
     })
     .on('error', (err) => {
       console.log('got an error emitted from connectorsRunner')
