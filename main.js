@@ -5,6 +5,9 @@ const ipcMain = require('electron').ipcMain;
 const connectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
 const _ = require('lodash');
+var winston = require('winston');
+require('winston-loggly');
+
 
 
 
@@ -36,7 +39,7 @@ function createWindow () {
 
   ipcMain.on('remoteLog', function(sender, message) {
 
-    console.log('< ' + message.message)
+    winston.info('< ' + message.message)
   })
 
   ipcMain.on('fetchMyBills', function(a, data)  {
@@ -50,7 +53,7 @@ function createWindow () {
     const trackEventConnectorsStatus = {
 
     };
-    console.log('running connector')
+    winston.info('running connector')
     var csr = new connectorsRunner();
     csr
     .on('succeed', (modelConnector) => {
@@ -61,7 +64,7 @@ function createWindow () {
       appWindow.webContents.send('fileDownloaded', data);
     })
     .on('error', (err) => {
-      console.log('got an error emitted from connectorsRunner')
+      winston.info('got an error emitted from connectorsRunner')
       const errorData = {
         errorMessage: err.message,
         errorName: err.name,
@@ -73,14 +76,14 @@ function createWindow () {
 
     csr.runThem(mUserMe, data, date, (err) => {
       if (err) {
-        console.log('Done running all connectors but some of them failed.', err);
+        winston.info('Done running all connectors but some of them failed.', err);
         return ;
       }
       const dateEnded = moment();
       const elapsedSeconds = parseInt(dateEnded.format("s"), 10) - parseInt(dateStarted.format('s'), 10);
       trackEventProps.elapsedSeconds = elapsedSeconds;
       _.merge(trackEventProps, trackEventConnectorsStatus);
-      console.log('done running all connectors!');
+      winston.info('done running all connectors!');
       appWindow.webContents.send('ConnectorsStatus', 'idle');
       IntercomTrackIpc(trackEventName, trackEventProps);
     })
@@ -94,7 +97,7 @@ function createWindow () {
     const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
     if (selectedFolder !== undefined) {
       saveDestinationFolder(selectedFolder);
-      console.log('selected folder is: ', selectedFolder);
+      winston.info('selected folder is: ', selectedFolder);
       IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
     } else {
       IntercomTrackIpc('cancel_selection_folder')
@@ -103,9 +106,11 @@ function createWindow () {
   })
 
   ipcMain.on('userMe', function(ax, mUser) {
-    console.log('updating userMe: ', mUser);
+    winston.info('updating userMe: ', mUser);
 
     mUserMe = mUser;
+    initLoggerOnce(mUserMe.email);
+
   })
 }
 
@@ -131,10 +136,23 @@ app.on('activate', function () {
 });
 
 function IntercomTrackIpc(name, props) {
-  console.log('IntercomTrackIpc: ', arguments);
+  winston.info('IntercomTrackIpc: ', arguments);
 
   appWindow.webContents.send('IntercomTrack', {
     eventName: name,
     eventProps: props
   });
 }
+
+var initLoggerOnce = _.once((email) =>  {
+  const regexp = new RegExp('[a-z\_\.]', 'ig');
+  const userTag = email.match(regexp).join('');
+
+console.log('user tag is: ', userTag);
+  winston.add(winston.transports.Loggly, {
+     token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
+     subdomain: "hellobill",
+     tags: ['desktopApp', userTag],
+     json:true,
+  });
+});
