@@ -5,6 +5,8 @@ const ipcMain = require('electron').ipcMain;
 const connectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
 const _ = require('lodash');
+const bluebird = require('bluebird');
+const immutable = require('immutable');
 var winston = require('winston');
 require('winston-loggly');
 
@@ -42,9 +44,53 @@ function createWindow () {
     winston.info('< ' + message.message)
   })
 
-  ipcMain.on('fetchMyBills', function(a, data)  {
+  ipcMain.on('fetchMyBills', (ax, data) => {
+    const immutableConnectors = immutable.fromJS(data);
+    fetchMyBillsRange(ax, immutableConnectors);
+    }
+  );
+
+  function fetchMyBillsRange(a, connectors) {
+    const dateFormat = "YYYY-MM";
+    const startDate = moment("2016-02", dateFormat);
+    const now = moment();
+    const months = [];
+
+    function newConnectorsHandler(ax, _connectors) {
+      winston.info('got new connectors list');
+      connectors = immutable.fromJS(_connectors);
+    }
+    ipcMain.on('connectorsUpdated', newConnectorsHandler);
+
+    while (startDate.format(dateFormat) != now.format(dateFormat)) {
+      months.push(startDate.format(dateFormat));
+      startDate.add('1', 'months');
+    }
+    months.push(startDate.format(dateFormat));
+    startDate.add('1', 'months');
+
+    console.log('here are my months:', months);
+    const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
+    bluebird.each(months, (month) => {
+      console.log('working on :', month)
+      const currentMonth = moment(month, dateFormat);
+
+      return fetchMyBillAsync(currentMonth, connectors)
+
+    })
+    .catch((err) => {
+      console.log('we got a fucking error here!', err)
+    })
+    .finally(() => {
+      ipcMain.removeListener('connectorsUpdated', newConnectorsHandler);
+    })
+
+  }
+
+   function fetchMyBill(date, connectors, fetchMyBillCallback)  {
+
     appWindow.webContents.send('ConnectorsStatus', 'running');
-    const date = moment("2015-12", "YYYY-MM");
+    // const date = moment("2015-12", "YYYY-MM");
     const dateStarted = moment();
     const trackEventName = "fetch_bills";
     const trackEventProps = {
@@ -59,6 +105,7 @@ function createWindow () {
     .on('succeed', (modelConnector) => {
       appWindow.webContents.send('ConnectorSucceed', modelConnector);
       trackEventConnectorsStatus['connector_'+modelConnector.name] = 'ok';
+      markConnectorSuccessDate(modelConnector._id, date.format('YYYY-MM'));
     })
     .on('fileDownloaded', (data) => {
       appWindow.webContents.send('fileDownloaded', data);
@@ -74,20 +121,23 @@ function createWindow () {
       appWindow.webContents.send('ConnectorError', errorData);
     });
 
-    csr.runThem(mUserMe, data, date, (err) => {
+    csr.runThem(mUserMe, connectors, date, (err) => {
       if (err) {
         winston.info('Done running all connectors but some of them failed.', err);
+        fetchMyBillCallback();
         return ;
       }
       const dateEnded = moment();
-      const elapsedSeconds = parseInt(dateEnded.format("s"), 10) - parseInt(dateStarted.format('s'), 10);
+      const elapsedSeconds = parseInt(dateEnded.format("X"), 10) - parseInt(dateStarted.format('X'), 10);
       trackEventProps.elapsedSeconds = elapsedSeconds;
       _.merge(trackEventProps, trackEventConnectorsStatus);
       winston.info('done running all connectors!');
       appWindow.webContents.send('ConnectorsStatus', 'idle');
       IntercomTrackIpc(trackEventName, trackEventProps);
+
+      fetchMyBillCallback();
     })
-  })
+  }
 
 
   ipcMain.on('selectDestinationFolder', function() {
@@ -141,6 +191,14 @@ function IntercomTrackIpc(name, props) {
   appWindow.webContents.send('IntercomTrack', {
     eventName: name,
     eventProps: props
+  });
+}
+
+function markConnectorSuccessDate(connectorID, dateStr) {
+  winston.info('marking connector %s as success with date: %s', connectorID, dateStr)
+  appWindow.webContents.send('markConnectorSuccessDate', {
+    connectorID: connectorID,
+    dateStr: dateStr
   });
 }
 
