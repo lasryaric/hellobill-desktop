@@ -7,7 +7,12 @@ const moment = require('moment');
 const _ = require('lodash');
 const bluebird = require('bluebird');
 const immutable = require('immutable');
-var winston = require('winston');
+const winston = require('winston');
+const keytar = require('keytar');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
+
 require('winston-loggly');
 
 
@@ -45,7 +50,11 @@ function createWindow () {
   })
 
   ipcMain.on('fetchMyBills', (ax, data) => {
+    console.log('fetchMyBills: ', data)
     const immutableConnectors = immutable.fromJS(data);
+    data.forEach((modelConnector) => {
+
+    })
     fetchMyBillsRange(ax, immutableConnectors);
     }
   );
@@ -141,9 +150,6 @@ function createWindow () {
 
 
   ipcMain.on('selectDestinationFolder', function() {
-    function saveDestinationFolder(destinationFolder) {
-      appWindow.webContents.send('saveDestinationFolder', destinationFolder);
-    }
     const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
     if (selectedFolder !== undefined) {
       saveDestinationFolder(selectedFolder);
@@ -159,7 +165,19 @@ function createWindow () {
     winston.info('updating userMe: ', mUser);
 
     mUserMe = mUser;
+    if (!mUserMe.destinationFolder) {
+      const bestFolderFound = findBestTargetFolder();
+      saveDestinationFolder(bestFolderFound);
+      IntercomTrackIpc('best_folder_found', {folder: bestFolderFound})
+    }
     initLoggerOnce(mUserMe.email);
+
+  })
+
+  ipcMain.on('ConnectorGotCredentials', (ax, data) => {
+    console.log('got new credentials:', data);
+    const serializedCredentials = JSON.stringify(data.credentials);
+    console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
 
   })
 }
@@ -214,3 +232,30 @@ console.log('user tag is: ', userTag);
      json:true,
   });
 });
+
+
+function saveDestinationFolder(destinationFolder) {
+  appWindow.webContents.send('saveDestinationFolder', destinationFolder);
+}
+
+function findBestTargetFolder() {
+  const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
+  const homeDirectory = os.homedir();
+  var bestDirectory = null;
+
+  bestCandidates.forEach((directory) => {
+    if (bestDirectory !== null) {
+      return ;
+    }
+    const bestCandidatePath = path.join(homeDirectory, directory);
+    console.log('testing on :', bestCandidatePath)
+    if (fs.existsSync(bestCandidatePath)) {
+      bestDirectory = bestCandidatePath;
+    }
+  })
+  if (bestDirectory === null) {
+    bestDirectory = homeDirectory;
+  }
+
+  return bestDirectory;
+}
