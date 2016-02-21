@@ -1,6 +1,7 @@
 'use strict';
 
 const electron = require('electron');
+const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
 const connectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
@@ -179,6 +180,22 @@ function createWindow () {
     const serializedCredentials = JSON.stringify(data.credentials);
     console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
 
+  })
+
+  ipcMain.on('OpenTargetFolder', (ax, folders) => {
+    var done = false;
+
+    folders.forEach((folder) => {
+
+      if (done === true) {
+        return ;
+      }
+      if (fs.existsSync(folder)) {
+        console.log('openning:', folder);
+        done = true;
+        shell.showItemInFolder(folder);
+      }
+    })
   })
 }
 
