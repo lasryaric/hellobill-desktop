@@ -102,7 +102,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	this.waitForPage = function(callback) {
 		noOpToBrowser();
-		onNextPageLoad(callback);
+		console.log("Waiting for page...");
+		onNextPageLoad(() => {
+			console.log('Done waiting for page...');
+			callback();
+		});
 	}
 
 	this.waitOnCurrentThread = function(millisec, callback) {
@@ -119,11 +123,26 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		onNextPageLoad(callback);
 	}
 
+	this.gotoInApp = function(url, callback) {
+		const message = {
+			action: 'goto',
+			url: url
+		};
 
-	this.waitForCss = function(cssSelector, callback) {
+		sendToBrowser(message);
+		onNextActionCompleted(callback);
+	}
+
+
+	this.waitForCss = function(cssSelector, silent, callback) {
+		if (!callback) {
+			callback = silent;
+			silent = false;
+		}
 		const message = {
 			action: 'waitForCss',
-			cssSelector: cssSelector
+			cssSelector: cssSelector,
+			silent: silent,
 		}
 
 		sendToBrowser(message);
@@ -151,10 +170,24 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		scheduleErrorTimeout();
 	}
 
+	var lastMessage = null;
+	function messageReliabilityHandler() {
+		if (lastMessage !== null) {
+			console.log('****** We are replaying a message!:', lastMessage);
+			sendToBrowser(lastMessage);
+		}
+	}
+
 	function sendToBrowser(data) {
-		console.log('sending message to browser: ', messageName, data)
+		if (lastMessage !== null) {
+			console.log('**** Found a non reliable message.. hm..', data)
+		}
+
 		safeBrowserWindowSync((bw) => {
 			if (bw.canReceiveOrder === true) {
+				bw.webContents.once('did-finish-load', messageReliabilityHandler);
+				console.log('sending message to browser: ', messageName, data)
+				lastMessage = data;
 				bw.send(messageName, data);
 				scheduleErrorTimeout();
 			} else {
@@ -170,6 +203,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	var onNextActionCompletedHandler = null;
 	function onNextActionCompleted(callback) {
+		lastMessage = null;
+		bw.webContents.removeListener('did-finish-load', messageReliabilityHandler);
 		onNextActionCompletedHandler = function (event, args) {
 			clearErrorTimeout();
 			console.log('got done doneExecuting message', args);
@@ -184,7 +219,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	var didLoadFinishHandler = null;
 	function onNextPageLoad(callback) {
-		didLoadFinishHandler = function () {
+		didLoadFinishHandler = function (ax) {
+			console.log('executing didLoadFinishHandler', ax.sender.getURL())
 			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
@@ -317,7 +353,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function scheduleErrorTimeout(timeoutMillisec) {
-		timeoutMillisec = timeoutMillisec || 10 * 1000;
+		timeoutMillisec = timeoutMillisec || config.clientSideTimeout;
 		_errorTimeout = setTimeout(() => {
 			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
 			self.emitter.emit('error', err);

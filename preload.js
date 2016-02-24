@@ -82,21 +82,27 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 	});
 }
 
-function runnerWaitForCss(cssSelector, originalMessage, callback) {
+function runnerWaitForCss(cssSelector, silent, originalMessage, callback) {
 	var called = 0;
 
 	function checkit() {
 		var domElemement = document.querySelectorAll(cssSelector);
+		var elementExists = { };
 
 		if (domElemement.length > 0) {
-			callback(null, originalMessage);
+			elementExists.elementExists = true;
+			callback(null, originalMessage, elementExists);
 
 			return ;
 		} else if (called < 10) {
+			remoteLog('runnerWaitForCss: Did not find ' + cssSelector+', called: '+called+'/10');
 			setTimeout(checkit, 500);
 			called++;
-		} else {
+		} else if (silent === false) {
 			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssSelector), originalMessage);
+		} else {
+			elementExists.elementExists = false;
+			callback(null, originalMessage, elementExists);
 		}
 	}
 
@@ -119,10 +125,13 @@ function whenDone(error, originalMessage, data) {
 		console.log('ok we are sending an error now!', data)
 		data = error.message;
 		messageName = 'couldNotExecute';
-	}
-	remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
 
-	window.__hellobill.ipc.send(messageName, data);
+	}
+
+		remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
+		window.__hellobill.ipc.send(messageName, data);
+
+
 }
 
 function remoteLog(message) {
@@ -132,7 +141,7 @@ function remoteLog(message) {
 }
 
 function __hellobillLoop() {
-	console.log('starting hellobill runLoop')
+	remoteLog('Starting the browser runLoop')
 
 	window.__hellobill.ipc.on('invokeAction', function(event, message) {
 
@@ -152,7 +161,7 @@ function __hellobillLoop() {
 	} else if (message.action === 'elementExists') {
 		runnerElementExists(message.cssSelector, message, whenDone)
 	}  else if (message.action ==='waitForCss') {
-		runnerWaitForCss(message.cssSelector, message, whenDone)
+		runnerWaitForCss(message.cssSelector, message.silent, message, whenDone)
 	} else if (message.action === 'getAttribute') {
 		runnerGetAttribute(message.cssSelector, message.attribute, message, whenDone);
 	} else if (message.action === 'waitForDownload') {
@@ -162,6 +171,7 @@ function __hellobillLoop() {
 	}
 	});
 }
+
 
 window.__hellobill = {};
 window.__hellobill.ipc = require('electron').ipcRenderer;
