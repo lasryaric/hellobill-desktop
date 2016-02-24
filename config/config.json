@@ -1,4 +1,4 @@
 {
   "downloadEnabled": false,
-  "clientSideTimeout": 30000
+  "clientSideTimeout": 20000
 }

@@ -62,9 +62,9 @@ function createWindow () {
 
   function fetchMyBillsRange(a, connectors) {
     const dateFormat = "YYYY-MM";
-    const startDate = moment("2016-02", dateFormat);
+    const startDate = moment("2015-01", dateFormat);
     const now = moment();
-    const months = [];
+    var months = [];
 
     function newConnectorsHandler(ax, _connectors) {
       winston.info('got new connectors list');
@@ -75,9 +75,11 @@ function createWindow () {
     while (startDate.format(dateFormat) != now.format(dateFormat)) {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
+
     }
     months.push(startDate.format(dateFormat));
     startDate.add('1', 'months');
+    // months = ['2016-01']
 
     console.log('here are my months:', months);
     const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
