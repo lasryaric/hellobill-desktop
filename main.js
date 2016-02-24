@@ -40,7 +40,7 @@ function createWindow () {
      }});
 
 
-  appWindow.loadURL('http://localhost:3000/desktop/app/authenticate');
+  appWindow.loadURL('http://app.hellobill.io/desktop/app/authenticate');
 
   //appWindow.webContents.openDevTools();
 
