@@ -8,6 +8,7 @@ const EventEmitter = require('events');
 const errors = require('./errors/errors')
 const config = require('./config/config.json');
 const checksum = require('checksum');
+const winston = require('winston');
 
 bluebird.promisifyAll(checksum);
 
@@ -102,7 +103,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	this.waitForPage = function(callback) {
 		noOpToBrowser();
-		onNextPageLoad(callback);
+		winston.info("Waiting for page...");
+		onNextPageLoad(() => {
+			winston.info('Done waiting for page...');
+			callback();
+		});
 	}
 
 	this.waitOnCurrentThread = function(millisec, callback) {
@@ -119,11 +124,26 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		onNextPageLoad(callback);
 	}
 
+	this.gotoInApp = function(url, callback) {
+		const message = {
+			action: 'goto',
+			url: url
+		};
 
-	this.waitForCss = function(cssSelector, callback) {
+		sendToBrowser(message);
+		onNextActionCompleted(callback);
+	}
+
+
+	this.waitForCss = function(cssSelector, silent, callback) {
+		if (!callback) {
+			callback = silent;
+			silent = false;
+		}
 		const message = {
 			action: 'waitForCss',
-			cssSelector: cssSelector
+			cssSelector: cssSelector,
+			silent: silent,
 		}
 
 		sendToBrowser(message);
@@ -151,14 +171,17 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		scheduleErrorTimeout();
 	}
 
+
+
+
 	function sendToBrowser(data) {
-		console.log('sending message to browser: ', messageName, data)
 		safeBrowserWindowSync((bw) => {
 			if (bw.canReceiveOrder === true) {
+				winston.info('sending message to browser: ', messageName, data)
 				bw.send(messageName, data);
 				scheduleErrorTimeout();
 			} else {
-				console.log('can not receive order right now, postponing!');
+				winston.info('can not receive order right now, postponing!');
 				setTimeout(function() {
 					sendToBrowser(data);
 				}, 500);
@@ -172,7 +195,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	function onNextActionCompleted(callback) {
 		onNextActionCompletedHandler = function (event, args) {
 			clearErrorTimeout();
-			console.log('got done doneExecuting message', args);
+			winston.info('got done doneExecuting message' + JSON.stringify(args));
 
 			callback(null, args)
 
@@ -184,7 +207,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	var didLoadFinishHandler = null;
 	function onNextPageLoad(callback) {
-		didLoadFinishHandler = function () {
+		didLoadFinishHandler = function (ax) {
+			winston.info('executing didLoadFinishHandler'+ ax.sender.getURL())
 			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
@@ -317,7 +341,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function scheduleErrorTimeout(timeoutMillisec) {
-		timeoutMillisec = timeoutMillisec || 10 * 1000;
+		timeoutMillisec = timeoutMillisec || config.clientSideTimeout;
 		_errorTimeout = setTimeout(() => {
 			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
 			self.emitter.emit('error', err);
