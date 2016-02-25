@@ -18,13 +18,16 @@ const dotenv = require('dotenv');
 require('winston-loggly');
 
 
+winston.add(winston.transports.File, { filename: 'hellobilllogs.log' });
+
+
 if (process.env.NODE_ENV) {
-    dotenv.load({ path: '.env.'+process.env.NODE_ENV });
+    dotenv.load({ path: './.env.'+process.env.NODE_ENV });
 } else {
-   dotenv.load({ path: '.env' });
+   dotenv.load({ path: './.env' });
 }
 
-console.log('Loaded env:', process.env.LOADED_FILE);
+winston.info('Loaded env:'+ process.env.LOADED_FILE);
 
 // Module to control application life.
 const app = electron.app;
@@ -190,9 +193,14 @@ function createWindow () {
 
   })
 
-  ipcMain.on('OpenTargetFolder', (ax, folders) => {
+  
+  ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
     var done = false;
-
+    const folders =[];
+    const hellobillPath = path.join(destinationFolder, 'hellobill');
+    folders.push(hellobillPath);
+    folders.push(destinationFolder)
+    
     folders.forEach((folder) => {
 
       if (done === true) {
@@ -254,7 +262,6 @@ var initLoggerOnce = _.once((email) =>  {
   }
 
 
-  winston.error("WE ARE RUNNING IN PACKAGED!")
   const regexp = new RegExp('[a-z\_\.]', 'ig');
   const userTag = email.match(regexp).join('');
 
