@@ -13,12 +13,18 @@ const keytar = require('keytar');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const dotenv = require('dotenv');
 
 require('winston-loggly');
 
 
+if (process.env.NODE_ENV) {
+    dotenv.load({ path: '.env.'+process.env.NODE_ENV });
+} else {
+   dotenv.load({ path: '.env' });
+}
 
-
+console.log('Loaded env:', process.env.LOADED_FILE);
 
 // Module to control application life.
 const app = electron.app;
@@ -40,7 +46,7 @@ function createWindow () {
      }});
 
 
-  appWindow.loadURL('http://app.hellobill.io/desktop/app/authenticate');
+  appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/app/authenticate');
 
   //appWindow.webContents.openDevTools();
 
@@ -135,7 +141,7 @@ function createWindow () {
 
     csr.runThem(mUserMe, connectors, date, (err) => {
       if (err) {
-        winston.info('Done running all connectors but some of them failed.', err);
+        winston.error('Done running all connectors but some of them failed.', err);
         fetchMyBillCallback();
         return ;
       }
@@ -240,6 +246,15 @@ function markConnectorSuccessDate(connectorID, dateStr) {
 }
 
 var initLoggerOnce = _.once((email) =>  {
+  
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
+
+    return ;
+  }
+
+
+  winston.error("WE ARE RUNNING IN PACKAGED!")
   const regexp = new RegExp('[a-z\_\.]', 'ig');
   const userTag = email.match(regexp).join('');
 

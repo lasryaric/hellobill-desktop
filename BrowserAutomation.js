@@ -358,7 +358,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	function couldNotExecuteHandler(ax, errorMessage) {
 		clearErrorTimeout();
-		console.log('got a couldNotExecute from browser with errorData: ', errorMessage);
+		winston.error('got a couldNotExecute from browser with errorData: ', errorMessage);
 		const err = new errors.ConnectorErrorCouldNotExecute(errorMessage);
 		self.emitter.emit('error', err);
 	}
