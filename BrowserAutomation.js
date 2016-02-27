@@ -16,11 +16,14 @@ const messageName = 'invokeAction';
 
 class MyEmitter extends EventEmitter {}
 
+var timeoutCounter = 0;
+var _errorTimeout = null;
+
 function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	this.emitter = new MyEmitter();
 	var self = this;
-	var _errorTimeout = null;
+
 	var isClosing = false;
 
 	console.log('mainRunner: destinationFolder:', destinationFolder)
@@ -30,8 +33,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	function safeBrowserWindowSync(callback) {
 		if (isClosing === true) {
-			throw new Error("we are closing, sorry");
-			console.log('calling a closing browser window instance for ', serviceName);
+			winston.verbose("We are closing, sorry.")
 
 			return ;
 		}
@@ -177,7 +179,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	function sendToBrowser(data) {
 		safeBrowserWindowSync((bw) => {
 			if (bw.canReceiveOrder === true) {
-				winston.info('sending message to browser: ', messageName, data)
+				winston.info('sending message to browser', {messageName: messageName, data: data})
 				bw.send(messageName, data);
 				scheduleErrorTimeout();
 			} else {
@@ -195,7 +197,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	function onNextActionCompleted(callback) {
 		onNextActionCompletedHandler = function (event, args) {
 			clearErrorTimeout();
-			winston.info('got done doneExecuting message' + JSON.stringify(args));
+			winston.info('got done doneExecuting message', {args: args});
 
 			callback(null, args)
 
@@ -208,7 +210,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	var didLoadFinishHandler = null;
 	function onNextPageLoad(callback) {
 		didLoadFinishHandler = function (ax) {
-			winston.info('executing didLoadFinishHandler'+ ax.sender.getURL())
+			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
 			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
@@ -346,19 +348,24 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
 			self.emitter.emit('error', err);
 		}, timeoutMillisec);
+		_errorTimeout.customID = timeoutCounter++;
 	}
 
 	function clearErrorTimeout() {
+
 		if (_errorTimeout !== null) {
-			console.log('clearing timeout')
+			winston.info('Clearing timeout %s', _errorTimeout.customID)
 			clearTimeout(_errorTimeout);
 			_errorTimeout = null;
+		} else {
+				winston.error("We can't clear the timeout because we have no timeout scheduled :/")
+			// throw new Error("We can't clear the timeout because we have no timeout scheduled :/")
 		}
 	}
 
 	function couldNotExecuteHandler(ax, errorMessage) {
 		clearErrorTimeout();
-		winston.error('got a couldNotExecute from browser with errorData: ', errorMessage);
+		winston.error('got a couldNotExecute from browser with errorDat ', {errorMessage: errorMessage});
 		const err = new errors.ConnectorErrorCouldNotExecute(errorMessage);
 		self.emitter.emit('error', err);
 	}

@@ -22,9 +22,9 @@ winston.add(winston.transports.File, { filename: 'hellobilllogs.log' });
 
 
 if (process.env.NODE_ENV) {
-    dotenv.load({ path: './.env.'+process.env.NODE_ENV });
+    dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
 } else {
-   dotenv.load({ path: './.env' });
+   dotenv.load({ path: __dirname+'/.env.production' });
 }
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
@@ -193,14 +193,14 @@ function createWindow () {
 
   })
 
-  
+
   ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
     var done = false;
     const folders =[];
     const hellobillPath = path.join(destinationFolder, 'hellobill');
     folders.push(hellobillPath);
     folders.push(destinationFolder)
-    
+
     folders.forEach((folder) => {
 
       if (done === true) {
@@ -254,7 +254,7 @@ function markConnectorSuccessDate(connectorID, dateStr) {
 }
 
 var initLoggerOnce = _.once((email) =>  {
-  
+
   if (process.env.NODE_ENV !== "production") {
     console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
 
