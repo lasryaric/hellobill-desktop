@@ -288,8 +288,9 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 							console.log('DONE downloading!', fileFullPath);
 							bw.canReceiveOrder = true;
 							downloadedMemory = downloadedMemory.add(remoteFileName);
+							scheduleErrorTimeout();
 							bw.send('downloadNext');
-
+							winston.info("Sending downloadNext message");
 							checksum
 							.fileAsync(fileFullPath)
 							.then((fileHash) => {
@@ -329,7 +330,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		safeBrowserWindowSync((bw) => {
 			bw.webContents.session.on('will-download', willDownloadHandler);
 		});
-		ipcMain.on('doneDownloading', doneDownloadingHandler);
+		ipcMain.once('doneDownloading', doneDownloadingHandler);
 
 
 		bw.on('close', function() {
@@ -349,6 +350,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			self.emitter.emit('error', err);
 		}, timeoutMillisec);
 		_errorTimeout.customID = timeoutCounter++;
+		winston.info("scheduleTimeoutMessage: ", _errorTimeout.customID);
 	}
 
 	function clearErrorTimeout() {
