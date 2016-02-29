@@ -255,7 +255,7 @@ function markConnectorSuccessDate(connectorID, dateStr) {
 
 var initLoggerOnce = _.once((email) =>  {
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.LOADED_FILE !== "production") {
     console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
 
     return ;
