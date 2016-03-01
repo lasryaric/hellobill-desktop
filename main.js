@@ -99,10 +99,11 @@ function createWindow () {
     }
     months.push(startDate.format(dateFormat));
     startDate.add('1', 'months');
-    // months = ['2015-01']
+    //months = ['2015-01']
 
     console.log('here are my months:', months);
     const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
+    const dateStartedAll = moment();
     bluebird.each(months, (month) => {
       console.log('working on :', month)
       const currentMonth = moment(month, dateFormat);
@@ -115,6 +116,9 @@ function createWindow () {
     })
     .finally(() => {
       ipcMain.removeListener('connectorsUpdated', newConnectorsHandler);
+      const dateFinishedAll = moment();
+      const elapsedSecondsAll = dateFinishedAll.format("X") - dateStartedAll.format("X");
+      winston.info("All bills fetched in : %s seconds", elapsedSecondsAll);
     })
 
   }
