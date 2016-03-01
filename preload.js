@@ -19,6 +19,28 @@ function runnerClick(cssSelector, originalMessage, callback) {
 	callback(null, originalMessage, null);
 }
 
+function runnerClickAll(cssSelector, originalMessage, callback) {
+
+	var domElemement = document.querySelectorAll(cssSelector)
+
+	console.log('runnerClickAll: ', cssSelector)
+	if (!domElemement || domElemement.length === 0) {
+		console.log('runnerClickAll: could not click on element!:', cssSelector)
+		callback(new Error('could not find css element:'+cssSelector), originalMessage);
+
+		return ;
+	}
+
+	for (var i = 0; i < domElemement.length; i++) {
+		domElemement[i].click();
+	}
+
+
+	console.log('runnerClickAll:clicked! ', cssSelector)
+	// callback(null, originalMessage);
+	callback(null, originalMessage, null);
+}
+
 
 function runnerTypeText(cssSelector, text, originalMessage, callback) {
 
@@ -152,6 +174,8 @@ function __hellobillLoop() {
 
 	if ( message.action === 'click') {
 		runnerClick(message.cssSelector, message, whenDone);
+	} else if (message.action === 'clickAll') {
+		runnerClickAll(message.cssSelector, message, whenDone);
 	} else if (message.action === 'typeText') {
 		runnerTypeText(message.cssSelector, message.text, message, whenDone);
 	} else if (message.action === 'goto') {

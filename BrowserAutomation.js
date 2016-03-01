@@ -62,6 +62,16 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		onNextActionCompleted(callback);
 	}
 
+	this.clickAll = function(cssSelector, callback) {
+		const message = {
+			action: 'clickAll',
+			cssSelector: cssSelector,
+		};
+
+		sendToBrowser(message);
+		onNextActionCompleted(callback);
+	}
+
 	this.clickAndWaitForPage = function(cssSelector, callback) {
 		const message = {
 			action: 'click',
