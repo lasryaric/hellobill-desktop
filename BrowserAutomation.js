@@ -180,7 +180,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function noOpToBrowser() {
-		scheduleErrorTimeout();
+
 	}
 
 
@@ -191,7 +191,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			if (bw.canReceiveOrder === true) {
 				winston.info('sending message to browser', {messageName: messageName, data: data})
 				bw.send(messageName, data);
-				scheduleErrorTimeout();
 			} else {
 				winston.info('can not receive order right now, postponing!');
 				setTimeout(function() {
@@ -214,6 +213,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		}
 		ipcMain.once('doneExecuting', onNextActionCompletedHandler);
+
+		scheduleErrorTimeout(() => {
+			ipcMain.removeListener('doneExecuting', onNextActionCompletedHandler);
+		})
 	}
 
 
@@ -226,12 +229,17 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 		safeBrowserWindowSync((bw) => {
 			bw.webContents.once('did-finish-load', didLoadFinishHandler);
+			scheduleErrorTimeout(() => {
+				bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
+			})
 		})
 
 	}
 
 	function onNextDownload(dateInstance, callback) {
-
+		scheduleErrorTimeout(() => {
+			_onErrorCleanUp(new Error("We never heard back from the downloader"));
+		});
 		function willDownloadHandler(event, item, webContents) {
 			clearErrorTimeout();
 			const remoteFileName = item.getFilename();
@@ -280,14 +288,15 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 					.then(() => {
 						const fileFullPath = filePath + remoteFileName;
 
-						console.log('lets go download :', fileURL.href)
+						winston.info('lets go download : %s', fileURL.href)
 						request(requestOptions)
 						.on('error', function(err) {
+							_onErrorCleanUp(err);
 							const customError = new errors.ConnectorErrorDownload(err.message);
 							self.emitter.emit('error', customError)
 						})
 						.on('response', function(response) {
-								console.log('download response code:', response.statusCode)
+								winston.info('download response code: %s', response.statusCode)
 								if (response.statusCode < 200 || response.statusCode >= 400) {
 										this.emit('error', new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
 								}
@@ -295,7 +304,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 						})
 						.pipe(fs.createWriteStream(fileFullPath))
 						.on('close', function() {
-							console.log('DONE downloading!', fileFullPath);
+							winston.info('DONE downloading: %s', fileFullPath);
 							bw.canReceiveOrder = true;
 							downloadedMemory = downloadedMemory.add(remoteFileName);
 							scheduleErrorTimeout();
@@ -314,7 +323,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 						})
 						.on('error', function(err) {
-							console.log('writting error:', err)
+							_onErrorCleanUp(err);
+							winston.error('Write error', {err: err})
 							const customError = new errors.ConnectorErrorDownload("Could not write the file at the following location: "+ err.path);
 							self.emitter.emit('error', customError)
 						})
@@ -342,23 +352,20 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		});
 		ipcMain.once('doneDownloading', doneDownloadingHandler);
 
-
-		bw.on('close', function() {
-			isClosing = true;
-			bw.webContents.session.removeListener('will-download', willDownloadHandler);
+		function _onErrorCleanUp(err) {
+			winston.info('Cleaning up the onNextDownload cycle because we got the following error:', {err: err});
 			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
-			ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
-			bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
-			ipcMain.removeListener('doneExecuting', onNextActionCompletedHandler);
-		})
+		}
 	}
 
-	function scheduleErrorTimeout(timeoutMillisec) {
-		timeoutMillisec = timeoutMillisec || config.clientSideTimeout;
+	function scheduleErrorTimeout(callback) {
 		_errorTimeout = setTimeout(() => {
+			if (callback) {
+				callback();
+			}
 			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
 			self.emitter.emit('error', err);
-		}, timeoutMillisec);
+		}, config.clientSideTimeout);
 		_errorTimeout.customID = timeoutCounter++;
 		winston.info("scheduleTimeoutMessage: ", _errorTimeout.customID);
 	}
@@ -371,7 +378,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			_errorTimeout = null;
 		} else {
 				winston.error("We can't clear the timeout because we have no timeout scheduled :/")
-			// throw new Error("We can't clear the timeout because we have no timeout scheduled :/")
 		}
 	}
 
