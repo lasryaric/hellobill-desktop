@@ -60,7 +60,18 @@ function createWindow () {
   })
 
   ipcMain.on('fetchMyBills', (ax, data) => {
-    console.log('fetchMyBills: ', data)
+    winston.info("Got fetch my bills order!");
+    if (false === fs.existsSync(mUserMe.destinationFolder)) {
+      electron.dialog.showMessageBox(null, {
+        title: "Read this",
+        message: 'Please select a valid destination folder and click "fetch my bills!" again.',
+        type: "info",
+        buttons:['ok got it'],
+      })
+
+
+      return ;
+    }
     const immutableConnectors = immutable.fromJS(data);
     data.forEach((modelConnector) => {
 
@@ -88,7 +99,7 @@ function createWindow () {
     }
     months.push(startDate.format(dateFormat));
     startDate.add('1', 'months');
-    // months = ['2016-01']
+    // months = ['2015-01']
 
     console.log('here are my months:', months);
     const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
