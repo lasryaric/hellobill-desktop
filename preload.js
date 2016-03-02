@@ -139,19 +139,21 @@ function runnerDownload(serviceName, date, originalMessage) {
 	downloader.download(date);
 }
 
-function whenDone(error, originalMessage, data) {
+function whenDone(error, originalMessage, resultData) {
 
-	data = data || {};
+	var data = {};
+	data.result = resultData;
 	var messageName = 'doneExecuting';
 	if (error) {
 		console.log('ok we are sending an error now!', data)
-		data = error.message;
+		data.errorMessage = error.message;
 		messageName = 'couldNotExecute';
-
 	}
+	data.originalMessageUUID = originalMessage.messageUUID;
 
-		remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
-		window.__hellobill.ipc.send(messageName, data);
+	window.__hellobill.ipc.send(messageName, data);
+	remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
+
 
 
 }

@@ -11,6 +11,7 @@ const config = require('./config/config.json');
 const checksum = require('checksum');
 const winston = require('winston');
 
+
 bluebird.promisifyAll(checksum);
 
 const messageName = 'invokeAction';
@@ -19,6 +20,8 @@ class MyEmitter extends EventEmitter {}
 
 var timeoutCounter = 0;
 var _errorTimeout = null;
+var lastMessageUUID = null;
+var messageUUIDCounter = 1;
 
 function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
@@ -189,6 +192,15 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	function sendToBrowser(data) {
 		safeBrowserWindowSync((bw) => {
 			if (bw.canReceiveOrder === true) {
+				if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
+					winston.error("Last message UUID is not null and we are trying to send another one", {messageName: messageName, data: data})
+					throw new Error("Last message UUID is not null and we are trying to send another one");
+				}
+				if (data.messageUUID) {
+					throw new Error("data.messageUUID is already defined!");
+				}
+				data.messageUUID = messageUUIDCounter++;
+				lastMessageUUID = data.messageUUID;
 				winston.info('sending message to browser', {messageName: messageName, data: data})
 				bw.send(messageName, data);
 			} else {
@@ -206,9 +218,14 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	function onNextActionCompleted(callback) {
 		onNextActionCompletedHandler = function (event, args) {
 			clearErrorTimeout();
+			if (!args.originalMessageUUID) {
+				console.log("no originalMessageUUID for this message!", args)
+				throw new Error("no originalMessageUUID for this message!");
+			}
+			lastMessageUUID = null;
 			winston.info('got done doneExecuting message', {args: args});
 
-			callback(null, args)
+			callback(null, args.result)
 
 
 		}
@@ -227,6 +244,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		function didLoadFinishHandler(ax) {
 			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
 			clearErrorTimeout();
+			lastMessageUUID = null;
 			setTimeout(callback, 0);
 		}
 
@@ -356,6 +374,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		function doneDownloadingHandler()  {
 			clearErrorTimeout();
+			lastMessageUUID = null;
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			})
@@ -400,10 +419,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 	}
 
-	function couldNotExecuteHandler(ax, errorMessage) {
+	function couldNotExecuteHandler(ax, data) {
 		clearErrorTimeout();
-		winston.error('got a couldNotExecute from browser with errorDat ', {errorMessage: errorMessage});
-		const err = new errors.ConnectorErrorCouldNotExecute(errorMessage);
+		winston.error('got a couldNotExecute from browser with errorDat ', {errorMessage: data.errorMessage});
+		const err = new errors.ConnectorErrorCouldNotExecute(data.errorMessage);
 		self.emitter.emit('error', err);
 	}
 
