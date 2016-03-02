@@ -28,7 +28,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	var isClosing = false;
 
 	console.log('mainRunner: destinationFolder:', destinationFolder)
-	var filenameNB = 0;
 	var willDownloadMemory = immutable.Set();
 	var downloadedMemory = immutable.Set();
 
@@ -223,7 +222,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 	function onNextPageLoad(callback) {
-		var gotPageError = false;
+
 
 		function didLoadFinishHandler(ax) {
 			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
@@ -258,7 +257,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		scheduleErrorTimeout(() => {
 			_onErrorCleanUp(new Error("We never heard back from the downloader"));
 		});
-		function willDownloadHandler(event, item, webContents) {
+		function willDownloadHandler(event, item) {
 			clearErrorTimeout();
 			const remoteFileName = item.getFilename();
 
