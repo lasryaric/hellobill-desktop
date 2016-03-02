@@ -18,7 +18,7 @@ const dotenv = require('dotenv');
 require('winston-loggly');
 
 
-winston.add(winston.transports.File, { filename: 'hellobilllogs.log' });
+winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false });
 
 
 if (process.env.NODE_ENV) {
