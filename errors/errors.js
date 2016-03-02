@@ -50,6 +50,16 @@ class ConnectorErrorWrongCredentials extends Error {
   }
 }
 
+class ConnectorErrorCredentialsNotFound extends Error {
+  constructor(message) {
+    super(message);
+    this.name = this.constructor.name;
+    this.message = message;
+    this.modelConnector = 0;
+    Error.captureStackTrace(this, this.constructor.name)
+  }
+}
+
 class ConnectorErrorDownload extends Error {
   constructor(message) {
     super(message);
@@ -84,3 +94,4 @@ exports.ConnectorErrorCouldNotExecute = ConnectorErrorCouldNotExecute;
 exports.ConnectorErrorTimeOut = ConnectorErrorTimeOut;
 exports.ConnectorErrorWrongCredentials = ConnectorErrorWrongCredentials;
 exports.ConnectorErrorDownload = ConnectorErrorDownload;
+exports.ConnectorErrorCredentialsNotFound = ConnectorErrorCredentialsNotFound;

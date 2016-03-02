@@ -147,7 +147,7 @@ function createWindow () {
       appWindow.webContents.send('fileDownloaded', data);
     })
     .on('error', (err) => {
-      winston.info('got an error emitted from connectorsRunner')
+      winston.error('main: got an error emitted from connectorsRunner: %s %s', err.name, err.message)
       const errorData = {
         errorMessage: err.message,
         errorName: err.name,
