@@ -359,13 +359,15 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function scheduleErrorTimeout(callback) {
-		_errorTimeout = setTimeout(() => {
-			if (callback) {
-				callback();
+		_errorTimeout = setTimeout(((localTimeCounter) => {
+			return () => {
+				if (callback) {
+					callback();
+				}
+				const err = new errors.ConnectorErrorTimeOut("We got a timeout error. localTimeCounter is: "+localTimeCounter)
+				self.emitter.emit('error', err);
 			}
-			const err = new errors.ConnectorErrorTimeOut("need to find last action :)" + new Date())
-			self.emitter.emit('error', err);
-		}, config.clientSideTimeout);
+		})(timeoutCounter), config.clientSideTimeout);
 		_errorTimeout.customID = timeoutCounter++;
 		winston.info("scheduleTimeoutMessage: ", _errorTimeout.customID);
 	}
