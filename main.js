@@ -82,7 +82,7 @@ function createWindow () {
 
   function fetchMyBillsRange(a, connectors) {
     const dateFormat = "YYYY-MM";
-    const startDate = moment("2015-01", dateFormat);
+    const startDate = moment().subtract(3, 'months');
     const now = moment();
     var months = [];
 
@@ -99,7 +99,7 @@ function createWindow () {
     }
     months.push(startDate.format(dateFormat));
     startDate.add('1', 'months');
-    //months = ['2015-01']
+    // months = ['2015-10']
 
     console.log('here are my months:', months);
     const fetchMyBillAsync = bluebird.promisify(fetchMyBill);

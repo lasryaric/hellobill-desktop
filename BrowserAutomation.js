@@ -1,5 +1,6 @@
 'use strict';
 
+const electron = require('electron');
 const ipcMain = require('electron').ipcMain;
 const immutable = require('immutable');
 const bluebird = require('bluebird');
@@ -220,14 +221,31 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 
-	var didLoadFinishHandler = null;
+
 	function onNextPageLoad(callback) {
-		didLoadFinishHandler = function (ax) {
+		var gotPageError = false;
+
+		function didLoadFinishHandler(ax) {
 			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
 			clearErrorTimeout();
 			setTimeout(callback, 0);
 		}
+
+		function didFailedLoadHandler(ax) {
+			// ax.resourceType === 'mainFrame'
+			if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
+				winston.error('http error: %s for url %s', ax.statusCode, ax.url)
+				electron.dialog.showMessageBox(null, {
+					title: "Read this",
+					message: 'We got an error for the following url: '+ ax.url,
+					type: "info",
+					buttons:['ok got it'],
+				})
+			}
+		}
+
 		safeBrowserWindowSync((bw) => {
+			bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
 			bw.webContents.once('did-finish-load', didLoadFinishHandler);
 			scheduleErrorTimeout(() => {
 				bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
