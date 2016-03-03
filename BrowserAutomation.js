@@ -302,7 +302,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 
 		function didFailedLoadHandler(ax) {
-			
+
 			if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
 				winston.error('http error: %s for url %s', ax.statusCode, ax.url)
 				electron.dialog.showMessageBox(null, {
@@ -315,7 +315,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 
 		safeBrowserWindowSync((bw) => {
-			bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
+			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
 			bw.webContents.once('did-finish-load', didLoadFinishHandler);
 			scheduleErrorTimeout(() => {
 				bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
