@@ -10,6 +10,7 @@ const errors = require('./errors/errors')
 const config = require('./config/config.json');
 const checksum = require('checksum');
 const winston = require('winston');
+const fs = require('fs');
 
 
 bluebird.promisifyAll(checksum);
@@ -182,6 +183,58 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		isClosing = true;
 	}
 
+	this.savePageAsPDF = function(momentDate, callback) {
+		bw.webContents.printToPDF({
+			printBackground: true
+		}, function(error, data) {
+
+	     if (error) {
+				 callback(error);
+			 }
+			 function getBillIncrementalFileName(nameWithoutExt, ext, directory) {
+				 var fileCounter = 1;
+				 function _getLocalName() {
+					 return nameWithoutExt+'_'+fileCounter+'.'+ext;
+				 }
+				 function _get() {
+					 const p = directory+'/'+_getLocalName();
+					 console.log('returning:', p);
+
+					 return p;
+				 }
+
+				 while (fs.existsSync(_get())) {
+					 fileCounter++;
+				 }
+
+				 return _getLocalName();
+			 }
+
+			 const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
+			 var fileCounter = 1;
+			 const fileHash = checksum(data);
+			 const urlHash = checksum(bw.webContents.getURL());
+			 var fileName = "uber_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
+
+			 mkdirpAsync(fileDirectory)
+			 .then(() => {
+				 fs.writeFile(fileDirectory + fileName, data, function(error) {
+		       if (error) {
+						 callback(error)
+					 }
+					 console.log("*** SAVED AS PDF!!!", fileName);
+					 self.emitter.emit('fileDownloaded', {
+						 fileHash: fileHash,
+						 fileName: fileName,
+						 pdfURL: bw.webContents.getURL(),
+						 connectorID: modelConnector._id
+					 })
+					 callback();
+		     })
+			 })
+	   })
+	}
+
 	function noOpToBrowser() {
 
 	}
@@ -249,7 +302,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 
 		function didFailedLoadHandler(ax) {
-			// ax.resourceType === 'mainFrame'
+			
 			if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
 				winston.error('http error: %s for url %s', ax.statusCode, ax.url)
 				electron.dialog.showMessageBox(null, {
@@ -311,14 +364,13 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 					console.log('headers are: ', headers.Cookie.length)
 
-					var fs = require('fs');
 					var requestOptions = {
 						uri: fileURL.href,
 						headers: headers
 					}
 
 					const dateStr = dateInstance.format("YYYY-MM");
-					const filePath = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
+					const filePath = getBillDirectory(serviceName, dateStr);
 					mkdirpAsync(filePath)
 					.then(() => {
 						const fileFullPath = filePath + remoteFileName;
@@ -345,6 +397,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 							scheduleErrorTimeout();
 							bw.send('downloadNext');
 							winston.info("Sending downloadNext message");
+
 							checksum
 							.fileAsync(fileFullPath)
 							.then((fileHash) => {
@@ -431,6 +484,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
 	})
 
+	function getBillDirectory(serviceName, dateStr) {
+		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
+
+		return p;
+	}
 
 	bluebird.promisifyAll(this);
 }
