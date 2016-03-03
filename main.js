@@ -73,9 +73,6 @@ function createWindow () {
       return ;
     }
     const immutableConnectors = immutable.fromJS(data);
-    data.forEach((modelConnector) => {
-
-    })
     fetchMyBillsRange(ax, immutableConnectors);
     }
   );
@@ -125,7 +122,6 @@ function createWindow () {
 
    function fetchMyBill(date, connectors, fetchMyBillCallback)  {
 
-    appWindow.webContents.send('ConnectorsStatus', 'running');
     // const date = moment("2015-12", "YYYY-MM");
     const dateStarted = moment();
     const trackEventName = "fetch_bills";
@@ -157,7 +153,10 @@ function createWindow () {
       appWindow.webContents.send('ConnectorError', errorData);
     });
 
-    csr.runThem(mUserMe, connectors, date, (err) => {
+    csr.runThem(mUserMe, connectors, date, (date, modelConnector) => {
+      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.name+' / '+date.format("YYYY-MM")});
+    },
+    (err) => {
       if (err) {
         winston.error('Done running all connectors but some of them failed.', err);
         fetchMyBillCallback();
@@ -168,7 +167,7 @@ function createWindow () {
       trackEventProps.elapsedSeconds = elapsedSeconds;
       _.merge(trackEventProps, trackEventConnectorsStatus);
       winston.info('done running all connectors!');
-      appWindow.webContents.send('ConnectorsStatus', 'idle');
+      appWindow.webContents.send('ConnectorsStatus', {status:'idle', description:null});
       IntercomTrackIpc(trackEventName, trackEventProps);
 
       fetchMyBillCallback();
