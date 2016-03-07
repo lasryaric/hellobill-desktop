@@ -64,6 +64,24 @@ function createWindow () {
       winston.info('< ' + message.message)
     })
 
+    ipcMain.on('TestCrendentials', (ax, modelConnectorJS) => {
+        const modelConnector = immutable.fromJS(modelConnectorJS);
+        const cr = new ConnectorsRunner();
+
+        cr.runIt(mUserMe, modelConnectorJS, null)
+        .then(() => {
+          console.log('credentials valid!')
+          appWindow.send('TestCrendentialsResult', {success:true})
+        })
+        .catch((err) => {
+          console.log('credentials NOT valid!: ', err)
+          appWindow.send('TestCrendentialsResult', {success:false})
+        })
+        .finally(() => {
+          return cr.closeBrowserWindow();
+        })
+    })
+
     ipcMain.on('fetchMyBills', (ax, data) => {
       winston.info("Got fetch my bills order!");
       if (false === fs.existsSync(mUserMe.destinationFolder)) {
