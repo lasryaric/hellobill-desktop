@@ -11,6 +11,8 @@ const config = require('./config/config.json');
 const checksum = require('checksum');
 const winston = require('winston');
 const fs = require('fs');
+var request = require('requestretry');
+
 
 
 bluebird.promisifyAll(checksum);
@@ -338,7 +340,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 			var url = require('url')
-			var request = require('request');
 
 			var fileURL = url.parse(item.getURL());
 			var headers = {
@@ -366,8 +367,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 					var requestOptions = {
 						uri: fileURL.href,
-						headers: headers
-					}
+						headers: headers,
+						maxAttempts: 3,
+						retryDelay: 2000
+					};
 
 					const dateStr = dateInstance.format("YYYY-MM");
 					const filePath = getBillDirectory(serviceName, dateStr);
@@ -448,6 +451,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function scheduleErrorTimeout(callback) {
+		return ;
 		_errorTimeout = setTimeout(((localTimeCounter) => {
 			return () => {
 				if (callback) {
@@ -462,7 +466,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function clearErrorTimeout() {
-
+		return ;
 		if (_errorTimeout !== null) {
 			winston.info('Clearing timeout %s', _errorTimeout.customID)
 			clearTimeout(_errorTimeout);
@@ -480,9 +484,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	ipcMain.on('couldNotExecute', couldNotExecuteHandler);
-	bw.on('close', function() {
+	this.cleanup = function() {
 		ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
-	})
+		winston.info('cleaning the browswer automation object');
+	}
 
 	function getBillDirectory(serviceName, dateStr) {
 		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";

@@ -3,7 +3,7 @@
 const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
-const connectorsRunner = require('./lib/ConnectorsRunner');
+const ConnectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
 const _ = require('lodash');
 const bluebird = require('bluebird');
@@ -22,9 +22,9 @@ winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false
 
 
 if (process.env.NODE_ENV) {
-    dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
+  dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
 } else {
-   dotenv.load({ path: __dirname+'/.env.production' });
+  dotenv.load({ path: __dirname+'/.env.production' });
 }
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
@@ -45,134 +45,72 @@ function createWindow () {
 
   appWindow = new BrowserWindow({width: 1200, height: 600, nodeIntegration: true, show:true,
     "web-preferences": {
-       "web-security": false
-     }});
+      "web-security": false
+    }});
 
 
-  appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/app/authenticate');
 
-  //appWindow.webContents.openDevTools();
-
-
-  ipcMain.on('remoteLog', function(sender, message) {
-
-    winston.info('< ' + message.message)
-  })
-
-  ipcMain.on('fetchMyBills', (ax, data) => {
-    winston.info("Got fetch my bills order!");
-    if (false === fs.existsSync(mUserMe.destinationFolder)) {
-      electron.dialog.showMessageBox(null, {
-        title: "Read this",
-        message: 'Please select a valid destination folder and click "fetch my bills!" again.',
-        type: "info",
-        buttons:['ok got it'],
-      })
+    //appWindow.webContents.openDevTools();
 
 
-      return ;
-    }
-    const immutableConnectors = immutable.fromJS(data);
-    fetchMyBillsRange(ax, immutableConnectors);
-    }
-  );
+    ipcMain.on('remoteLog', function(sender, message) {
 
-  function fetchMyBillsRange(a, connectors) {
-    const dateFormat = "YYYY-MM";
-    const startDate = moment().subtract(3, 'months');
-    const now = moment();
-    var months = [];
-
-    function newConnectorsHandler(ax, _connectors) {
-      winston.info('got new connectors list');
-      connectors = immutable.fromJS(_connectors);
-    }
-    ipcMain.on('connectorsUpdated', newConnectorsHandler);
-
-    while (startDate.format(dateFormat) != now.format(dateFormat)) {
-      months.push(startDate.format(dateFormat));
-      startDate.add('1', 'months');
-
-    }
-    months.push(startDate.format(dateFormat));
-    startDate.add('1', 'months');
-    // months = ['2015-10']
-
-    console.log('here are my months:', months);
-    const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
-    const dateStartedAll = moment();
-    bluebird.each(months, (month) => {
-      console.log('working on :', month)
-      const currentMonth = moment(month, dateFormat);
-
-      return fetchMyBillAsync(currentMonth, connectors)
-
-    })
-    .catch((err) => {
-      console.log('we got a fucking error here!', err)
-    })
-    .finally(() => {
-      ipcMain.removeListener('connectorsUpdated', newConnectorsHandler);
-      const dateFinishedAll = moment();
-      const elapsedSecondsAll = dateFinishedAll.format("X") - dateStartedAll.format("X");
-      winston.info("All bills fetched in : %s seconds", elapsedSecondsAll);
+      winston.info('< ' + message.message)
     })
 
-  }
+    ipcMain.on('fetchMyBills', (ax, data) => {
+      winston.info("Got fetch my bills order!");
+      if (false === fs.existsSync(mUserMe.destinationFolder)) {
+        electron.dialog.showMessageBox(null, {
+          title: "Read this",
+          message: 'Please select a valid destination folder and click "fetch my bills!" again.',
+          type: "info",
+          buttons:['ok got it'],
+        })
 
-   function fetchMyBill(date, connectors, fetchMyBillCallback)  {
 
-    // const date = moment("2015-12", "YYYY-MM");
-    const dateStarted = moment();
-    const trackEventName = "fetch_bills";
-    const trackEventProps = {
-      fetch_range: date.format('YYYY-MM')
-    };
-    const trackEventConnectorsStatus = {
-
-    };
-    winston.info('running connector')
-    var csr = new connectorsRunner();
-    csr
-    .on('succeed', (modelConnector) => {
-      appWindow.webContents.send('ConnectorSucceed', modelConnector);
-      trackEventConnectorsStatus['connector_'+modelConnector.name] = 'ok';
-      markConnectorSuccessDate(modelConnector._id, date.format('YYYY-MM'));
-    })
-    .on('fileDownloaded', (data) => {
-      appWindow.webContents.send('fileDownloaded', data);
-    })
-    .on('error', (err) => {
-      winston.error('main: got an error emitted from connectorsRunner: %s %s', err.name, err.message)
-      const errorData = {
-        errorMessage: err.message,
-        errorName: err.name,
-        modelConnector: err.modelConnector
-      }
-      trackEventConnectorsStatus['connector_'+err.modelConnector.name] = err.name;
-      appWindow.webContents.send('ConnectorError', errorData);
-    });
-
-    csr.runThem(mUserMe, connectors, date, (date, modelConnector) => {
-      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.name+' / '+date.format("YYYY-MM")});
-    },
-    (err) => {
-      if (err) {
-        winston.error('Done running all connectors but some of them failed.', err);
-        fetchMyBillCallback();
         return ;
       }
-      const dateEnded = moment();
-      const elapsedSeconds = parseInt(dateEnded.format("X"), 10) - parseInt(dateStarted.format('X'), 10);
-      trackEventProps.elapsedSeconds = elapsedSeconds;
-      _.merge(trackEventProps, trackEventConnectorsStatus);
-      winston.info('done running all connectors!');
-      appWindow.webContents.send('ConnectorsStatus', {status:'idle', description:null});
-      IntercomTrackIpc(trackEventName, trackEventProps);
+      const immutableConnectors = immutable.fromJS(data);
 
-      fetchMyBillCallback();
-    })
-  }
+      const dateFormat = "YYYY-MM";
+      const startDate = moment().subtract(10, 'months');
+      const now = moment();
+      var months = [];
+
+      while (startDate.format(dateFormat) !== now.format(dateFormat)) {
+        months.push(startDate.format(dateFormat));
+        startDate.add('1', 'months');
+      }
+      months.push(startDate.format(dateFormat));
+      startDate.add('1', 'months');
+      months = months.reverse();
+      // months = ['2015-10']
+
+      // fetchMyBillsRange(ax, immutableConnectors);
+      return bluebird
+      .each(immutableConnectors, (modelConnector) => {
+        const cr = new ConnectorsRunner();
+
+        const monthPromise = bluebird.each(months, (monthStr) => {
+          const thisMoment = moment(monthStr, "YYYY-MM");
+
+          return cr
+          .runIt(mUserMe, modelConnector.toJS(), thisMoment)
+          .then(() => {
+            winston.info('done for %s / %s', modelConnector.get('name'), monthStr);
+          })
+        });
+        monthPromise
+        .then(() => {
+            return cr.closeBrowserWindow();
+        })
+
+        return monthPromise;
+      })
+
+    });
 
 
   ipcMain.on('selectDestinationFolder', function() {
@@ -279,12 +217,12 @@ var initLoggerOnce = _.once((email) =>  {
   const regexp = new RegExp('[a-z\_\.]', 'ig');
   const userTag = email.match(regexp).join('');
 
-console.log('user tag is: ', userTag);
+  console.log('user tag is: ', userTag);
   winston.add(winston.transports.Loggly, {
-     token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
-     subdomain: "hellobill",
-     tags: ['desktopApp', userTag],
-     json:true,
+    token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
+    subdomain: "hellobill",
+    tags: ['desktopApp', userTag],
+    json:true,
   });
 });
 
