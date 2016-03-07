@@ -11,13 +11,10 @@ const config = require('./config/config.json');
 const checksum = require('checksum');
 const winston = require('winston');
 const fs = require('fs');
-var request = require('requestretry');
+const request = require('requestretry');
 const _ = require('lodash');
 
-
-
 bluebird.promisifyAll(checksum);
-
 const messageName = 'invokeAction';
 
 class MyEmitter extends EventEmitter {}
@@ -200,7 +197,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			 const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
 			 const fileHash = checksum(data);
 			 const urlHash = checksum(bw.webContents.getURL());
-			 var fileName = "uber_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
+			 var fileName = serviceName+"_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
+			 const dumpDirectory = serviceName+"/"+momentDate.format("YYYY-MM")+"/";
 
 			 mkdirpAsync(fileDirectory)
 			 .then(() => {
@@ -213,8 +211,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 						 fileHash: fileHash,
 						 fileName: fileName,
 						 pdfURL: bw.webContents.getURL(),
-						 connectorID: modelConnector._id
+						 connectorID: modelConnector._id,
+						 localFileName: fileDirectory + fileName,
+						 dumpDirectory: dumpDirectory
 					 })
+
 					 callback();
 		     })
 			 })
@@ -394,11 +395,13 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 							checksum
 							.fileAsync(fileFullPath)
 							.then((fileHash) => {
-
+								const dumpDirectory = serviceName+"/"+dateInstance.format("YYYY-MM")+"/";
 								self.emitter.emit('fileDownloaded', {
 									fileHash: fileHash,
 									fileName: remoteFileName,
-									connectorID: modelConnector._id
+									connectorID: modelConnector._id,
+									localFileName: fileFullPath,
+									dumpDirectory: dumpDirectory
 								})
 							})
 

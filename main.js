@@ -15,6 +15,9 @@ const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
+
+
+
 require('winston-loggly');
 
 
@@ -26,6 +29,8 @@ if (process.env.NODE_ENV) {
 } else {
   dotenv.load({ path: __dirname+'/.env.production' });
 }
+
+const FSClient = require('./lib/utils/FSClient')
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
 
@@ -92,8 +97,24 @@ function createWindow () {
       var doNotRetryList = immutable.Set();
 
       function fileDownloadedHandler(data) {
-        console.log('file downloaded!')
+        console.log('file downloaded!', data)
+
+        var headers = { };
+        var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
+        console.log('dump: %s, %s, %s', data.localFileName, remotepath)
         appWindow.webContents.send('fileDownloaded', data);
+
+        FSClient.putFile(data.localFileName, remotepath, (err) => {
+          if (err) {
+              winston.error('Error dumping file: %s', err.message);
+
+              return ;
+          }
+          winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
+        })
+
+
+
       }
 
       var total = immutableConnectors.size * months.length;
@@ -151,9 +172,9 @@ function createWindow () {
         monthPromise
         .then(() => {
           return cr.closeBrowserWindow();
+          cr.removeListener('fileDownloaded', fileDownloadedHandler);
         })
 
-        cr.removeListener('fileDownloaded', fileDownloadedHandler);
 
         return monthPromise;
       })
