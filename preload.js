@@ -147,7 +147,6 @@ function whenDone(error, originalMessage, resultData) {
 	if (error) {
 		console.log('ok we are sending an error now!', data)
 		data.errorMessage = error.message;
-		messageName = 'couldNotExecute';
 	}
 	data.originalMessageUUID = originalMessage.messageUUID;
 

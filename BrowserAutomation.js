@@ -1,6 +1,6 @@
 'use strict';
 
-const electron = require('electron');
+
 const ipcMain = require('electron').ipcMain;
 const immutable = require('immutable');
 const bluebird = require('bluebird');
@@ -12,6 +12,7 @@ const checksum = require('checksum');
 const winston = require('winston');
 const fs = require('fs');
 var request = require('requestretry');
+const _ = require('lodash');
 
 
 
@@ -23,10 +24,11 @@ class MyEmitter extends EventEmitter {}
 
 var timeoutCounter = 0;
 var _errorTimeout = null;
-var lastMessageUUID = null;
-var messageUUIDCounter = 1;
 
 function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
+
+	var lastMessageUUID = null;
+	var messageUUIDCounter = 1;
 
 	this.emitter = new MyEmitter();
 	var self = this;
@@ -193,27 +195,9 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	     if (error) {
 				 callback(error);
 			 }
-			 function getBillIncrementalFileName(nameWithoutExt, ext, directory) {
-				 var fileCounter = 1;
-				 function _getLocalName() {
-					 return nameWithoutExt+'_'+fileCounter+'.'+ext;
-				 }
-				 function _get() {
-					 const p = directory+'/'+_getLocalName();
-					 console.log('returning:', p);
 
-					 return p;
-				 }
-
-				 while (fs.existsSync(_get())) {
-					 fileCounter++;
-				 }
-
-				 return _getLocalName();
-			 }
 
 			 const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
-			 var fileCounter = 1;
 			 const fileHash = checksum(data);
 			 const urlHash = checksum(bw.webContents.getURL());
 			 var fileName = "uber_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
@@ -269,9 +253,9 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 
-	var onNextActionCompletedHandler = null;
+
 	function onNextActionCompleted(callback) {
-		onNextActionCompletedHandler = function (event, args) {
+		function onNextActionCompletedHandler(event, args) {
 			clearErrorTimeout();
 			if (!args.originalMessageUUID) {
 				console.log("no originalMessageUUID for this message!", args)
@@ -279,8 +263,12 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			}
 			lastMessageUUID = null;
 			winston.info('got done doneExecuting message', {args: args});
+			if (args.errorMessage) {
+				callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
+			} else {
+				callback(null, args.result);
+			}
 
-			callback(null, args.result)
 
 
 		}
@@ -303,18 +291,18 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			setTimeout(callback, 0);
 		}
 
-		function didFailedLoadHandler(ax) {
-
-			if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
-				winston.error('http error: %s for url %s', ax.statusCode, ax.url)
-				electron.dialog.showMessageBox(null, {
-					title: "Read this",
-					message: 'We got an error for the following url: '+ ax.url,
-					type: "info",
-					buttons:['ok got it'],
-				})
-			}
-		}
+		// function didFailedLoadHandler(ax) {
+		//
+		// 	if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
+		// 		winston.error('http error: %s for url %s', ax.statusCode, ax.url)
+		// 		electron.dialog.showMessageBox(null, {
+		// 			title: "Read this",
+		// 			message: 'We got an error for the following url: '+ ax.url,
+		// 			type: "info",
+		// 			buttons:['ok got it'],
+		// 		})
+		// 	}
+		// }
 
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
@@ -327,6 +315,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function onNextDownload(dateInstance, callback) {
+		callback = _.once(callback);
 		scheduleErrorTimeout(() => {
 			_onErrorCleanUp(new Error("We never heard back from the downloader"));
 		});
@@ -374,6 +363,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 					const dateStr = dateInstance.format("YYYY-MM");
 					const filePath = getBillDirectory(serviceName, dateStr);
+
 					mkdirpAsync(filePath)
 					.then(() => {
 						const fileFullPath = filePath + remoteFileName;
@@ -383,12 +373,12 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 						.on('error', function(err) {
 							_onErrorCleanUp(err);
 							const customError = new errors.ConnectorErrorDownload(err.message);
-							self.emitter.emit('error', customError)
+							callback(customError);
 						})
 						.on('response', function(response) {
 								winston.info('download response code: %s', response.statusCode)
 								if (response.statusCode < 200 || response.statusCode >= 400) {
-										this.emit('error', new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
+										callback(new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
 								}
 
 						})
@@ -417,9 +407,13 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 							_onErrorCleanUp(err);
 							winston.error('Write error', {err: err})
 							const customError = new errors.ConnectorErrorDownload("Could not write the file at the following location: "+ err.path);
-							self.emitter.emit('error', customError)
+							callback(customError);
 						})
 
+					})
+					.catch((err) => {
+						const customError = new errors.ConnectorErrorDownload(err.message);
+						callback(customError);
 					})
 
 				});
@@ -451,42 +445,34 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 	function scheduleErrorTimeout(callback) {
-		return ;
-		_errorTimeout = setTimeout(((localTimeCounter) => {
-			return () => {
-				if (callback) {
-					callback();
-				}
-				const err = new errors.ConnectorErrorTimeOut("We got a timeout error. localTimeCounter is: "+localTimeCounter)
-				self.emitter.emit('error', err);
-			}
-		})(timeoutCounter), config.clientSideTimeout);
-		_errorTimeout.customID = timeoutCounter++;
-		winston.info("scheduleTimeoutMessage: ", _errorTimeout.customID);
+
+		// _errorTimeout = setTimeout(((localTimeCounter) => {
+		// 	return () => {
+		// 		if (callback) {
+		// 			callback();
+		// 		}
+		// 		const err = new errors.ConnectorErrorTimeOut("We got a timeout error. localTimeCounter is: "+localTimeCounter)
+		// 		self.emitter.emit('error', err);
+		// 	}
+		// })(timeoutCounter), config.clientSideTimeout);
+		// _errorTimeout.customID = timeoutCounter++;
+		// winston.info("scheduleTimeoutMessage: ", _errorTimeout.customID);
 	}
 
 	function clearErrorTimeout() {
-		return ;
-		if (_errorTimeout !== null) {
-			winston.info('Clearing timeout %s', _errorTimeout.customID)
-			clearTimeout(_errorTimeout);
-			_errorTimeout = null;
-		} else {
-				winston.error("We can't clear the timeout because we have no timeout scheduled :/")
-		}
+		// if (_errorTimeout !== null) {
+		// 	winston.info('Clearing timeout %s', _errorTimeout.customID)
+		// 	clearTimeout(_errorTimeout);
+		// 	_errorTimeout = null;
+		// } else {
+		// 		winston.error("We can't clear the timeout because we have no timeout scheduled :/")
+		// }
 	}
 
-	function couldNotExecuteHandler(ax, data) {
-		clearErrorTimeout();
-		winston.error('got a couldNotExecute from browser with errorDat ', {errorMessage: data.errorMessage});
-		const err = new errors.ConnectorErrorCouldNotExecute(data.errorMessage);
-		self.emitter.emit('error', err);
-	}
 
-	ipcMain.on('couldNotExecute', couldNotExecuteHandler);
 	this.cleanup = function() {
-		ipcMain.removeListener('couldNotExecute', couldNotExecuteHandler);
 		winston.info('cleaning the browswer automation object');
+		bw.canReceiveOrder = true;
 	}
 
 	function getBillDirectory(serviceName, dateStr) {

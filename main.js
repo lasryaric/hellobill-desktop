@@ -72,10 +72,10 @@ function createWindow () {
 
         return ;
       }
-      const immutableConnectors = immutable.fromJS(data);
+      var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment().subtract(10, 'months');
+      const startDate = moment().subtract(2, 'months');
       const now = moment();
       var months = [];
 
@@ -88,167 +88,214 @@ function createWindow () {
       months = months.reverse();
       // months = ['2015-10']
 
-      // fetchMyBillsRange(ax, immutableConnectors);
+      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
+      var doNotRetryList = immutable.Set();
+
+      function fileDownloadedHandler(data) {
+        console.log('file downloaded!')
+        appWindow.webContents.send('fileDownloaded', data);
+      }
+
       return bluebird
       .each(immutableConnectors, (modelConnector) => {
         const cr = new ConnectorsRunner();
+        cr.on('fileDownloaded', fileDownloadedHandler);
 
         const monthPromise = bluebird.each(months, (monthStr) => {
           const thisMoment = moment(monthStr, "YYYY-MM");
+          const modelConnectorJS = modelConnector.toJS();
+
+          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")});
+
+          if (doNotRetryList.has(modelConnector.get('_id'))) {
+            winston.info('Skipping %s / %s because it is on the do not retry list', modelConnector.get('name'), monthStr);
+
+            return ;
+          }
+
+          if (modelConnector.get('error')) {
+            const errorName = modelConnector.getIn(['error', 'errorName']);
+            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(errorName) > -1) {
+                winston.info('Skipping %s / %s because the connector is marked as errored with %s / ', modelConnector.get('name'), monthStr, errorName, modelConnector.getIn(['error', 'errorMessage']));
+
+                return ;
+            }
+          }
 
           return cr
-          .runIt(mUserMe, modelConnector.toJS(), thisMoment)
+          .runIt(mUserMe, modelConnectorJS, thisMoment)
           .then(() => {
             winston.info('done for %s / %s', modelConnector.get('name'), monthStr);
+            appWindow.webContents.send('ConnectorSucceed', modelConnector.toJS());
+          })
+          .catch((err) => {
+            winston.error('Error for connector %s / %s. error:%s errorMessage: %s', modelConnector.get('name'), monthStr, err.name, err.message)
+            const errorData = {
+              errorMessage: err.message,
+              errorName: err.name,
+              modelConnector: err.modelConnector
+            }
+            appWindow.webContents.send('ConnectorError', errorData);
+            const errorName = modelConnector.getIn(['error', 'errorName']);
+            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(errorName) > -1) {
+              doNotRetryList = doNotRetryList.add(modelConnector.get('_id'));
+            }
+            console.log('Adding %s to the doNotRetryList: ', doNotRetryList.has(modelConnector.get('_id')));
+
           })
         });
         monthPromise
         .then(() => {
-            return cr.closeBrowserWindow();
+          return cr.closeBrowserWindow();
         })
 
+        cr.removeListener('fileDownloaded', fileDownloadedHandler);
+
         return monthPromise;
+      })
+      .then(() => {
+        appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
       })
 
     });
 
 
-  ipcMain.on('selectDestinationFolder', function() {
-    const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
-    if (selectedFolder !== undefined) {
-      saveDestinationFolder(selectedFolder);
-      winston.info('selected folder is: ', selectedFolder);
-      IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
-    } else {
-      IntercomTrackIpc('cancel_selection_folder')
-    }
-
-  })
-
-  ipcMain.on('userMe', function(ax, mUser) {
-    winston.info('updating userMe: ', mUser);
-
-    mUserMe = mUser;
-    if (!mUserMe.destinationFolder) {
-      const bestFolderFound = findBestTargetFolder();
-      saveDestinationFolder(bestFolderFound);
-      IntercomTrackIpc('best_folder_found', {folder: bestFolderFound})
-    }
-    initLoggerOnce(mUserMe.email);
-
-  })
-
-  ipcMain.on('ConnectorGotCredentials', (ax, data) => {
-    console.log('got new credentials:', data);
-    const serializedCredentials = JSON.stringify(data.credentials);
-    console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
-
-  })
-
-
-  ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
-    var done = false;
-    const folders =[];
-    const hellobillPath = path.join(destinationFolder, 'hellobill');
-    folders.push(hellobillPath);
-    folders.push(destinationFolder)
-
-    folders.forEach((folder) => {
-
-      if (done === true) {
-        return ;
+    ipcMain.on('selectDestinationFolder', function() {
+      const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
+      if (selectedFolder !== undefined) {
+        saveDestinationFolder(selectedFolder);
+        winston.info('selected folder is: ', selectedFolder);
+        IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
+      } else {
+        IntercomTrackIpc('cancel_selection_folder')
       }
-      if (fs.existsSync(folder)) {
-        console.log('openning:', folder);
-        done = true;
-        shell.showItemInFolder(folder);
-      }
+
     })
-  })
-}
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-app.on('ready', createWindow);
+    ipcMain.on('userMe', function(ax, mUser) {
+      winston.info('updating userMe: ', mUser);
 
-// Quit when all windows are closed.
-app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
+      mUserMe = mUser;
+      if (!mUserMe.destinationFolder) {
+        const bestFolderFound = findBestTargetFolder();
+        saveDestinationFolder(bestFolderFound);
+        IntercomTrackIpc('best_folder_found', {folder: bestFolderFound})
+      }
+      initLoggerOnce(mUserMe.email);
 
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (appWindow === null) {
-    createWindow();
-  }
-});
+    })
 
-function IntercomTrackIpc(name, props) {
-  winston.info('IntercomTrackIpc: ', arguments);
+    ipcMain.on('ConnectorGotCredentials', (ax, data) => {
+      console.log('got new credentials:', data);
+      const serializedCredentials = JSON.stringify(data.credentials);
+      console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
 
-  appWindow.webContents.send('IntercomTrack', {
-    eventName: name,
-    eventProps: props
-  });
-}
+    })
 
-function markConnectorSuccessDate(connectorID, dateStr) {
-  winston.info('marking connector %s as success with date: %s', connectorID, dateStr)
-  appWindow.webContents.send('markConnectorSuccessDate', {
-    connectorID: connectorID,
-    dateStr: dateStr
-  });
-}
 
-var initLoggerOnce = _.once((email) =>  {
+    ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
+      var done = false;
+      const folders =[];
+      const hellobillPath = path.join(destinationFolder, 'hellobill');
+      folders.push(hellobillPath);
+      folders.push(destinationFolder)
 
-  if (process.env.LOADED_FILE !== "production") {
-    console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
+      folders.forEach((folder) => {
 
-    return ;
+        if (done === true) {
+          return ;
+        }
+        if (fs.existsSync(folder)) {
+          console.log('openning:', folder);
+          done = true;
+          shell.showItemInFolder(folder);
+        }
+      })
+    })
   }
 
+  // This method will be called when Electron has finished
+  // initialization and is ready to create browser windows.
+  app.on('ready', createWindow);
 
-  const regexp = new RegExp('[a-z\_\.]', 'ig');
-  const userTag = email.match(regexp).join('');
-
-  console.log('user tag is: ', userTag);
-  winston.add(winston.transports.Loggly, {
-    token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
-    subdomain: "hellobill",
-    tags: ['desktopApp', userTag],
-    json:true,
+  // Quit when all windows are closed.
+  app.on('window-all-closed', function () {
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    if (process.platform !== 'darwin') {
+      app.quit();
+    }
   });
-});
 
+  app.on('activate', function () {
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (appWindow === null) {
+      createWindow();
+    }
+  });
 
-function saveDestinationFolder(destinationFolder) {
-  appWindow.webContents.send('saveDestinationFolder', destinationFolder);
-}
+  function IntercomTrackIpc(name, props) {
+    winston.info('IntercomTrackIpc: ', arguments);
 
-function findBestTargetFolder() {
-  const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
-  const homeDirectory = os.homedir();
-  var bestDirectory = null;
+    appWindow.webContents.send('IntercomTrack', {
+      eventName: name,
+      eventProps: props
+    });
+  }
 
-  bestCandidates.forEach((directory) => {
-    if (bestDirectory !== null) {
+  function markConnectorSuccessDate(connectorID, dateStr) {
+    winston.info('marking connector %s as success with date: %s', connectorID, dateStr)
+    appWindow.webContents.send('markConnectorSuccessDate', {
+      connectorID: connectorID,
+      dateStr: dateStr
+    });
+  }
+
+  var initLoggerOnce = _.once((email) =>  {
+
+    if (process.env.LOADED_FILE !== "production") {
+      console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
+
       return ;
     }
-    const bestCandidatePath = path.join(homeDirectory, directory);
-    console.log('testing on :', bestCandidatePath)
-    if (fs.existsSync(bestCandidatePath)) {
-      bestDirectory = bestCandidatePath;
-    }
-  })
-  if (bestDirectory === null) {
-    bestDirectory = homeDirectory;
+
+
+    const regexp = new RegExp('[a-z\_\.]', 'ig');
+    const userTag = email.match(regexp).join('');
+
+    console.log('user tag is: ', userTag);
+    winston.add(winston.transports.Loggly, {
+      token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
+      subdomain: "hellobill",
+      tags: ['desktopApp', userTag],
+      json:true,
+    });
+  });
+
+
+  function saveDestinationFolder(destinationFolder) {
+    appWindow.webContents.send('saveDestinationFolder', destinationFolder);
   }
 
-  return bestDirectory;
-}
+  function findBestTargetFolder() {
+    const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
+    const homeDirectory = os.homedir();
+    var bestDirectory = null;
+
+    bestCandidates.forEach((directory) => {
+      if (bestDirectory !== null) {
+        return ;
+      }
+      const bestCandidatePath = path.join(homeDirectory, directory);
+      console.log('testing on :', bestCandidatePath)
+      if (fs.existsSync(bestCandidatePath)) {
+        bestDirectory = bestCandidatePath;
+      }
+    })
+    if (bestDirectory === null) {
+      bestDirectory = homeDirectory;
+    }
+
+    return bestDirectory;
+  }
