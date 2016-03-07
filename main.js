@@ -75,7 +75,7 @@ function createWindow () {
       var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment().subtract(2, 'months');
+      const startDate = moment("2015-01", dateFormat);
       const now = moment();
       var months = [];
 
@@ -96,6 +96,9 @@ function createWindow () {
         appWindow.webContents.send('fileDownloaded', data);
       }
 
+      var total = immutableConnectors.size * months.length;
+      var counter = 1;
+
       return bluebird
       .each(immutableConnectors, (modelConnector) => {
         const cr = new ConnectorsRunner();
@@ -105,7 +108,8 @@ function createWindow () {
           const thisMoment = moment(monthStr, "YYYY-MM");
           const modelConnectorJS = modelConnector.toJS();
 
-          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")});
+          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+counter+'/'+total+')'});
+          counter++;
 
           if (doNotRetryList.has(modelConnector.get('_id'))) {
             winston.info('Skipping %s / %s because it is on the do not retry list', modelConnector.get('name'), monthStr);
