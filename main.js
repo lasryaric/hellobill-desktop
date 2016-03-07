@@ -303,7 +303,7 @@ function createWindow () {
   }
 
   function findBestTargetFolder() {
-    const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
+    const bestCandidates = ['Dropbox', 'Google Drive', 'Desktop', 'Documents'];
     const homeDirectory = os.homedir();
     var bestDirectory = null;
 
