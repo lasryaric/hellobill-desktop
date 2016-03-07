@@ -99,7 +99,6 @@ function createWindow () {
       function fileDownloadedHandler(data) {
         console.log('file downloaded!', data)
 
-        var headers = { };
         var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
         console.log('dump: %s, %s, %s', data.localFileName, remotepath)
         appWindow.webContents.send('fileDownloaded', data);
@@ -161,8 +160,8 @@ function createWindow () {
               modelConnector: err.modelConnector
             }
             appWindow.webContents.send('ConnectorError', errorData);
-            const errorName = modelConnector.getIn(['error', 'errorName']);
-            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(errorName) > -1) {
+
+            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(err.name) > -1) {
               doNotRetryList = doNotRetryList.add(modelConnector.get('_id'));
             }
             console.log('Adding %s to the doNotRetryList: ', doNotRetryList.has(modelConnector.get('_id')));
