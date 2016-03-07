@@ -3,7 +3,7 @@
 const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
-const connectorsRunner = require('./lib/ConnectorsRunner');
+const ConnectorsRunner = require('./lib/ConnectorsRunner');
 const moment = require('moment');
 const _ = require('lodash');
 const bluebird = require('bluebird');
@@ -15,6 +15,9 @@ const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
+
+
+
 require('winston-loggly');
 
 
@@ -22,10 +25,12 @@ winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false
 
 
 if (process.env.NODE_ENV) {
-    dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
+  dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
 } else {
-   dotenv.load({ path: __dirname+'/.env.production' });
+  dotenv.load({ path: __dirname+'/.env.production' });
 }
+
+const FSClient = require('./lib/utils/FSClient')
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
 
@@ -45,272 +50,276 @@ function createWindow () {
 
   appWindow = new BrowserWindow({width: 1200, height: 600, nodeIntegration: true, show:true,
     "web-preferences": {
-       "web-security": false
-     }});
+      "web-security": false
+    }});
 
 
-  appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/app/authenticate');
 
-  //appWindow.webContents.openDevTools();
-
-
-  ipcMain.on('remoteLog', function(sender, message) {
-
-    winston.info('< ' + message.message)
-  })
-
-  ipcMain.on('fetchMyBills', (ax, data) => {
-    winston.info("Got fetch my bills order!");
-    if (false === fs.existsSync(mUserMe.destinationFolder)) {
-      electron.dialog.showMessageBox(null, {
-        title: "Read this",
-        message: 'Please select a valid destination folder and click "fetch my bills!" again.',
-        type: "info",
-        buttons:['ok got it'],
-      })
+    //appWindow.webContents.openDevTools();
 
 
-      return ;
-    }
-    const immutableConnectors = immutable.fromJS(data);
-    fetchMyBillsRange(ax, immutableConnectors);
-    }
-  );
+    ipcMain.on('remoteLog', function(sender, message) {
 
-  function fetchMyBillsRange(a, connectors) {
-    const dateFormat = "YYYY-MM";
-    const startDate = moment().subtract(3, 'months');
-    const now = moment();
-    var months = [];
+      winston.info('< ' + message.message)
+    })
 
-    function newConnectorsHandler(ax, _connectors) {
-      winston.info('got new connectors list');
-      connectors = immutable.fromJS(_connectors);
-    }
-    ipcMain.on('connectorsUpdated', newConnectorsHandler);
+    ipcMain.on('fetchMyBills', (ax, data) => {
+      winston.info("Got fetch my bills order!");
+      if (false === fs.existsSync(mUserMe.destinationFolder)) {
+        electron.dialog.showMessageBox(null, {
+          title: "Read this",
+          message: 'Please select a valid destination folder and click "fetch my bills!" again.',
+          type: "info",
+          buttons:['ok got it'],
+        })
 
-    while (startDate.format(dateFormat) != now.format(dateFormat)) {
+
+        return ;
+      }
+      var immutableConnectors = immutable.fromJS(data);
+
+      const dateFormat = "YYYY-MM";
+      const startDate = moment("2015-01", dateFormat);
+      const now = moment();
+      var months = [];
+
+      while (startDate.format(dateFormat) !== now.format(dateFormat)) {
+        months.push(startDate.format(dateFormat));
+        startDate.add('1', 'months');
+      }
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
+      months = months.reverse();
+      // months = ['2015-10']
 
-    }
-    months.push(startDate.format(dateFormat));
-    startDate.add('1', 'months');
-    // months = ['2015-10']
+      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
+      var doNotRetryList = immutable.Set();
 
-    console.log('here are my months:', months);
-    const fetchMyBillAsync = bluebird.promisify(fetchMyBill);
-    const dateStartedAll = moment();
-    bluebird.each(months, (month) => {
-      console.log('working on :', month)
-      const currentMonth = moment(month, dateFormat);
+      function fileDownloadedHandler(data) {
+        console.log('file downloaded!', data)
 
-      return fetchMyBillAsync(currentMonth, connectors)
+        var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
+        console.log('dump: %s, %s, %s', data.localFileName, remotepath)
+        appWindow.webContents.send('fileDownloaded', data);
 
-    })
-    .catch((err) => {
-      console.log('we got a fucking error here!', err)
-    })
-    .finally(() => {
-      ipcMain.removeListener('connectorsUpdated', newConnectorsHandler);
-      const dateFinishedAll = moment();
-      const elapsedSecondsAll = dateFinishedAll.format("X") - dateStartedAll.format("X");
-      winston.info("All bills fetched in : %s seconds", elapsedSecondsAll);
-    })
+        FSClient.putFile(data.localFileName, remotepath, (err) => {
+          if (err) {
+              winston.error('Error dumping file: %s', err.message);
 
-  }
+              return ;
+          }
+          winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
+        })
 
-   function fetchMyBill(date, connectors, fetchMyBillCallback)  {
 
-    // const date = moment("2015-12", "YYYY-MM");
-    const dateStarted = moment();
-    const trackEventName = "fetch_bills";
-    const trackEventProps = {
-      fetch_range: date.format('YYYY-MM')
-    };
-    const trackEventConnectorsStatus = {
 
-    };
-    winston.info('running connector')
-    var csr = new connectorsRunner();
-    csr
-    .on('succeed', (modelConnector) => {
-      appWindow.webContents.send('ConnectorSucceed', modelConnector);
-      trackEventConnectorsStatus['connector_'+modelConnector.name] = 'ok';
-      markConnectorSuccessDate(modelConnector._id, date.format('YYYY-MM'));
-    })
-    .on('fileDownloaded', (data) => {
-      appWindow.webContents.send('fileDownloaded', data);
-    })
-    .on('error', (err) => {
-      winston.error('main: got an error emitted from connectorsRunner: %s %s', err.name, err.message)
-      const errorData = {
-        errorMessage: err.message,
-        errorName: err.name,
-        modelConnector: err.modelConnector
       }
-      trackEventConnectorsStatus['connector_'+err.modelConnector.name] = err.name;
-      appWindow.webContents.send('ConnectorError', errorData);
+
+      var total = immutableConnectors.size * months.length;
+      var counter = 1;
+
+      return bluebird
+      .each(immutableConnectors, (modelConnector) => {
+        const cr = new ConnectorsRunner();
+        cr.on('fileDownloaded', fileDownloadedHandler);
+
+        const monthPromise = bluebird.each(months, (monthStr) => {
+          const thisMoment = moment(monthStr, "YYYY-MM");
+          const modelConnectorJS = modelConnector.toJS();
+
+          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+counter+'/'+total+')'});
+          counter++;
+
+          if (doNotRetryList.has(modelConnector.get('_id'))) {
+            winston.info('Skipping %s / %s because it is on the do not retry list', modelConnector.get('name'), monthStr);
+
+            return ;
+          }
+
+          if (modelConnector.get('error')) {
+            const errorName = modelConnector.getIn(['error', 'errorName']);
+            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(errorName) > -1) {
+                winston.info('Skipping %s / %s because the connector is marked as errored with %s / ', modelConnector.get('name'), monthStr, errorName, modelConnector.getIn(['error', 'errorMessage']));
+
+                return ;
+            }
+          }
+
+          return cr
+          .runIt(mUserMe, modelConnectorJS, thisMoment)
+          .then(() => {
+            winston.info('done for %s / %s', modelConnector.get('name'), monthStr);
+            appWindow.webContents.send('ConnectorSucceed', modelConnector.toJS());
+          })
+          .catch((err) => {
+            winston.error('Error for connector %s / %s. error:%s errorMessage: %s', modelConnector.get('name'), monthStr, err.name, err.message)
+            const errorData = {
+              errorMessage: err.message,
+              errorName: err.name,
+              modelConnector: err.modelConnector
+            }
+            appWindow.webContents.send('ConnectorError', errorData);
+
+            if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(err.name) > -1) {
+              doNotRetryList = doNotRetryList.add(modelConnector.get('_id'));
+            }
+            console.log('Adding %s to the doNotRetryList: ', doNotRetryList.has(modelConnector.get('_id')));
+
+          })
+        });
+        monthPromise
+        .then(() => {
+          return cr.closeBrowserWindow();
+          cr.removeListener('fileDownloaded', fileDownloadedHandler);
+        })
+
+
+        return monthPromise;
+      })
+      .then(() => {
+        appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
+      })
+
     });
 
-    csr.runThem(mUserMe, connectors, date, (date, modelConnector) => {
-      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.name+' / '+date.format("YYYY-MM")});
-    },
-    (err) => {
-      if (err) {
-        winston.error('Done running all connectors but some of them failed.', err);
-        fetchMyBillCallback();
-        return ;
-      }
-      const dateEnded = moment();
-      const elapsedSeconds = parseInt(dateEnded.format("X"), 10) - parseInt(dateStarted.format('X'), 10);
-      trackEventProps.elapsedSeconds = elapsedSeconds;
-      _.merge(trackEventProps, trackEventConnectorsStatus);
-      winston.info('done running all connectors!');
-      appWindow.webContents.send('ConnectorsStatus', {status:'idle', description:null});
-      IntercomTrackIpc(trackEventName, trackEventProps);
 
-      fetchMyBillCallback();
+    ipcMain.on('selectDestinationFolder', function() {
+      const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
+      if (selectedFolder !== undefined) {
+        saveDestinationFolder(selectedFolder);
+        winston.info('selected folder is: ', selectedFolder);
+        IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
+      } else {
+        IntercomTrackIpc('cancel_selection_folder')
+      }
+
+    })
+
+    ipcMain.on('userMe', function(ax, mUser) {
+      winston.info('updating userMe: ', mUser);
+
+      mUserMe = mUser;
+      if (!mUserMe.destinationFolder) {
+        const bestFolderFound = findBestTargetFolder();
+        saveDestinationFolder(bestFolderFound);
+        IntercomTrackIpc('best_folder_found', {folder: bestFolderFound})
+      }
+      initLoggerOnce(mUserMe.email);
+
+    })
+
+    ipcMain.on('ConnectorGotCredentials', (ax, data) => {
+      console.log('got new credentials:', data);
+      const serializedCredentials = JSON.stringify(data.credentials);
+      console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
+
+    })
+
+
+    ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
+      var done = false;
+      const folders =[];
+      const hellobillPath = path.join(destinationFolder, 'hellobill');
+      folders.push(hellobillPath);
+      folders.push(destinationFolder)
+
+      folders.forEach((folder) => {
+
+        if (done === true) {
+          return ;
+        }
+        if (fs.existsSync(folder)) {
+          console.log('openning:', folder);
+          done = true;
+          shell.showItemInFolder(folder);
+        }
+      })
     })
   }
 
+  // This method will be called when Electron has finished
+  // initialization and is ready to create browser windows.
+  app.on('ready', createWindow);
 
-  ipcMain.on('selectDestinationFolder', function() {
-    const selectedFolder = electron.dialog.showOpenDialog(appWindow, { properties: [ 'openDirectory']});
-    if (selectedFolder !== undefined) {
-      saveDestinationFolder(selectedFolder);
-      winston.info('selected folder is: ', selectedFolder);
-      IntercomTrackIpc('selected_bills_folder', {folder: selectedFolder[0]})
-    } else {
-      IntercomTrackIpc('cancel_selection_folder')
+  // Quit when all windows are closed.
+  app.on('window-all-closed', function () {
+    // On OS X it is common for applications and their menu bar
+    // to stay active until the user quits explicitly with Cmd + Q
+    if (process.platform !== 'darwin') {
+      app.quit();
     }
+  });
 
-  })
-
-  ipcMain.on('userMe', function(ax, mUser) {
-    winston.info('updating userMe: ', mUser);
-
-    mUserMe = mUser;
-    if (!mUserMe.destinationFolder) {
-      const bestFolderFound = findBestTargetFolder();
-      saveDestinationFolder(bestFolderFound);
-      IntercomTrackIpc('best_folder_found', {folder: bestFolderFound})
+  app.on('activate', function () {
+    // On OS X it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (appWindow === null) {
+      createWindow();
     }
-    initLoggerOnce(mUserMe.email);
-
-  })
-
-  ipcMain.on('ConnectorGotCredentials', (ax, data) => {
-    console.log('got new credentials:', data);
-    const serializedCredentials = JSON.stringify(data.credentials);
-    console.log('did keytar?', keytar.replacePassword('hellobil_desktopapp', data.connectorID, serializedCredentials));
-
-  })
-
-
-  ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
-    var done = false;
-    const folders =[];
-    const hellobillPath = path.join(destinationFolder, 'hellobill');
-    folders.push(hellobillPath);
-    folders.push(destinationFolder)
-
-    folders.forEach((folder) => {
-
-      if (done === true) {
-        return ;
-      }
-      if (fs.existsSync(folder)) {
-        console.log('openning:', folder);
-        done = true;
-        shell.showItemInFolder(folder);
-      }
-    })
-  })
-}
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-app.on('ready', createWindow);
-
-// Quit when all windows are closed.
-app.on('window-all-closed', function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (appWindow === null) {
-    createWindow();
-  }
-});
-
-function IntercomTrackIpc(name, props) {
-  winston.info('IntercomTrackIpc: ', arguments);
-
-  appWindow.webContents.send('IntercomTrack', {
-    eventName: name,
-    eventProps: props
   });
-}
 
-function markConnectorSuccessDate(connectorID, dateStr) {
-  winston.info('marking connector %s as success with date: %s', connectorID, dateStr)
-  appWindow.webContents.send('markConnectorSuccessDate', {
-    connectorID: connectorID,
-    dateStr: dateStr
-  });
-}
+  function IntercomTrackIpc(name, props) {
+    winston.info('IntercomTrackIpc: ', arguments);
 
-var initLoggerOnce = _.once((email) =>  {
-
-  if (process.env.LOADED_FILE !== "production") {
-    console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
-
-    return ;
+    appWindow.webContents.send('IntercomTrack', {
+      eventName: name,
+      eventProps: props
+    });
   }
 
+  function markConnectorSuccessDate(connectorID, dateStr) {
+    winston.info('marking connector %s as success with date: %s', connectorID, dateStr)
+    appWindow.webContents.send('markConnectorSuccessDate', {
+      connectorID: connectorID,
+      dateStr: dateStr
+    });
+  }
 
-  const regexp = new RegExp('[a-z\_\.]', 'ig');
-  const userTag = email.match(regexp).join('');
+  var initLoggerOnce = _.once((email) =>  {
 
-console.log('user tag is: ', userTag);
-  winston.add(winston.transports.Loggly, {
-     token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
-     subdomain: "hellobill",
-     tags: ['desktopApp', userTag],
-     json:true,
-  });
-});
+    if (process.env.LOADED_FILE !== "production") {
+      console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
 
-
-function saveDestinationFolder(destinationFolder) {
-  appWindow.webContents.send('saveDestinationFolder', destinationFolder);
-}
-
-function findBestTargetFolder() {
-  const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
-  const homeDirectory = os.homedir();
-  var bestDirectory = null;
-
-  bestCandidates.forEach((directory) => {
-    if (bestDirectory !== null) {
       return ;
     }
-    const bestCandidatePath = path.join(homeDirectory, directory);
-    console.log('testing on :', bestCandidatePath)
-    if (fs.existsSync(bestCandidatePath)) {
-      bestDirectory = bestCandidatePath;
-    }
-  })
-  if (bestDirectory === null) {
-    bestDirectory = homeDirectory;
+
+
+    const regexp = new RegExp('[a-z\_\.]', 'ig');
+    const userTag = email.match(regexp).join('');
+
+    console.log('user tag is: ', userTag);
+    winston.add(winston.transports.Loggly, {
+      token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
+      subdomain: "hellobill",
+      tags: ['desktopApp', userTag],
+      json:true,
+    });
+  });
+
+
+  function saveDestinationFolder(destinationFolder) {
+    appWindow.webContents.send('saveDestinationFolder', destinationFolder);
   }
 
-  return bestDirectory;
-}
+  function findBestTargetFolder() {
+    const bestCandidates = ['Dropbox', 'Desktop', 'Bureau', 'Documents'];
+    const homeDirectory = os.homedir();
+    var bestDirectory = null;
+
+    bestCandidates.forEach((directory) => {
+      if (bestDirectory !== null) {
+        return ;
+      }
+      const bestCandidatePath = path.join(homeDirectory, directory);
+      console.log('testing on :', bestCandidatePath)
+      if (fs.existsSync(bestCandidatePath)) {
+        bestDirectory = bestCandidatePath;
+      }
+    })
+    if (bestDirectory === null) {
+      bestDirectory = homeDirectory;
+    }
+
+    return bestDirectory;
+  }
