@@ -59,7 +59,9 @@ function runnerTypeText(cssSelector, text, originalMessage, callback) {
 
 
 function runnerGoto(url, originalMessage, callback) {
-	window.location = url;
+
+		window.location = url;
+
 
 	callback(null, originalMessage);
 }
@@ -129,7 +131,54 @@ function runnerWaitForCss(cssSelector, silent, originalMessage, callback) {
 	}
 
 	checkit();
+}
 
+function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
+	var called = 0;
+
+
+	function checkit() {
+
+		var elementExists = null;
+		var foundAny = false;
+
+		if (typeof(csss) !== "string") {
+			const results = {};
+			window.__hb._.forEach(csss, (v, k) => {
+				const search = !!(document.querySelector(v));
+				if (true === search) {
+					foundAny = true;
+				}
+
+				results[k] = search;
+			})
+
+			elementExists = {ex: results};
+		} else {
+				foundAny = !!(document.querySelector(csss));
+				elementExists = { elementExists: foundAny, ex: foundAny};
+		}
+
+		if (foundAny) {
+
+			elementExists.elementExists = true;
+			callback(null, originalMessage, elementExists);
+
+			return ;
+		} else if (called < 10) {
+			remoteLog('runnerWaitForCss: Did not find ' + csss+', called: '+called+'/10');
+			setTimeout(checkit, 500);
+			called++;
+		} else if (silent === false) {
+			callback(new Error('runnerWaitForCss: could not find cssSelector: '+csss), originalMessage);
+		} else {
+			elementExists.elementExists = false;
+			elementExists.ex = false;
+			callback(null, originalMessage, elementExists);
+		}
+	}
+
+	checkit();
 }
 
 function runnerDownload(serviceName, date, originalMessage) {
@@ -142,7 +191,7 @@ function runnerDownload(serviceName, date, originalMessage) {
 function whenDone(error, originalMessage, resultData) {
 
 	var data = {};
-	data.result = resultData;
+	data['result'] = resultData;
 	var messageName = 'doneExecuting';
 	if (error) {
 		console.log('ok we are sending an error now!', data)
@@ -151,7 +200,7 @@ function whenDone(error, originalMessage, resultData) {
 	data.originalMessageUUID = originalMessage.messageUUID;
 
 	window.__hellobill.ipc.send(messageName, data);
-	remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
+	// remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
 
 
 
@@ -164,7 +213,7 @@ function remoteLog(message) {
 }
 
 function __hellobillLoop() {
-	remoteLog('Starting the browser runLoop')
+	// remoteLog('Starting the browser runLoop')
 
 	window.__hellobill.ipc.on('invokeAction', function(event, message) {
 
@@ -186,7 +235,7 @@ function __hellobillLoop() {
 	} else if (message.action === 'elementExists') {
 		runnerElementExists(message.cssSelector, message, whenDone)
 	}  else if (message.action ==='waitForCss') {
-		runnerWaitForCss(message.cssSelector, message.silent, message, whenDone)
+		runnerWaitForCssMulti(message.cssSelector, message.silent, message, whenDone)
 	} else if (message.action === 'getAttribute') {
 		runnerGetAttribute(message.cssSelector, message.attribute, message, whenDone);
 	} else if (message.action === 'waitForDownload') {
@@ -195,6 +244,8 @@ function __hellobillLoop() {
 		console.log('got an unknown message:', message);
 	}
 	});
+
+	window.__hellobill.ipc.send('RunloopStarted');
 }
 
 
@@ -207,3 +258,4 @@ window.__hellobill._ = require('lodash');
 window.__hb = {};
 window.__hb.downloaders = require('./ClientSideDownloader/Downloaders');
 window.__hb.remoteLog = remoteLog;
+window.__hb._ = require('lodash');

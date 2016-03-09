@@ -7,12 +7,15 @@ const bluebird = require('bluebird');
 const mkdirpAsync = bluebird.promisify(require('mkdirp'));
 const EventEmitter = require('events');
 const errors = require('./errors/errors')
-const config = require('./config/config.json');
+// const config = require('./config/config.json');
 const checksum = require('checksum');
 const winston = require('winston');
 const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
+const tough = require('tough-cookie');
+const Cookie = tough.Cookie;
+
 
 bluebird.promisifyAll(checksum);
 const messageName = 'invokeAction';
@@ -24,7 +27,9 @@ var _errorTimeout = null;
 
 function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
+
 	var lastMessageUUID = null;
+	var lastMessageData = null;
 	var messageUUIDCounter = 1;
 
 	this.emitter = new MyEmitter();
@@ -35,6 +40,20 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	console.log('mainRunner: destinationFolder:', destinationFolder)
 	var willDownloadMemory = immutable.Set();
 	var downloadedMemory = immutable.Set();
+
+
+	function setlastMessageUUID(value) {
+			if (value === null) {
+				console.log('clean lastMessageUUID, value about to be cleaned: ', lastMessageUUID)
+
+			} else {
+				console.log('Setting lastMessageUUID, curent value, new value', lastMessageUUID, value)
+			}
+			// console.trace();
+			lastMessageUUID = value;
+	}
+
+
 
 	function safeBrowserWindowSync(callback) {
 		if (isClosing === true) {
@@ -115,7 +134,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		};
 
 		sendToBrowser(message);
-		onNextActionCompleted(callback);
+		function myCallback() {
+			console.log('******** called with args: ', arguments);
+			return callback();
+		}
+		onNextActionCompleted(myCallback);
 	}
 
 	this.waitForPage = function(callback) {
@@ -141,6 +164,36 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		onNextPageLoad(callback);
 	}
 
+	this.waitForURL = function(urls, callback) {
+		function urlMatch(current, urls) {
+			var matches = urls.filter((one) => {
+				if (current.indexOf(one) > -1) {
+					return true;
+				}
+
+				return false;
+			})
+			console.log('did I find a match?', matches, current, urls)
+
+			return (matches.length > 0);
+		}
+
+
+		function didLoadFinishHandler() {
+			const currentURL = bw.getURL();
+			if (urlMatch(currentURL, urls)) {
+				bw.webContents.removeListener('runloop-ready', didLoadFinishHandler);
+				setTimeout(function() {
+					console.log('***** FOUND A MATCH! DONE!', currentURL)
+					callback();
+				}, 0)
+			}
+		}
+		bw.webContents.on('runloop-ready', didLoadFinishHandler);
+		didLoadFinishHandler();
+
+	}
+
 	this.gotoInApp = function(url, callback) {
 		const message = {
 			action: 'goto',
@@ -152,19 +205,55 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 	}
 
 
+
+
 	this.waitForCss = function(cssSelector, silent, callback) {
+		winston.info('calling super waitForCss with selector: %s', cssSelector)
+
 		if (!callback) {
 			callback = silent;
 			silent = false;
 		}
-		const message = {
-			action: 'waitForCss',
-			cssSelector: cssSelector,
-			silent: silent,
+		var reEnter = 0;
+		setlastMessageUUID(null);
+
+		function _waitForCss(cssSelector, silent) {
+
+			const message = {
+				action: 'waitForCss',
+				cssSelector: cssSelector,
+				silent: silent,
+			}
+
+			console.log('setting up the callback');
+
+			if (reEnter > 0) {
+
+				setlastMessageUUID(null);
+			}
+			reEnter++;
+			setlastMessageUUID(null);
+			sendToBrowser(message);
 		}
 
-		sendToBrowser(message);
-		onNextActionCompleted(callback);
+		function safeCallback() {
+			console.log('calling safe callback with arguments:', arguments);
+			bw.webContents.removeListener('runloop-ready', wfcDidFinishLoadHandler);
+			console.log('cleared the callback 2');
+			return callback.apply(null, arguments);
+		};
+
+		function wfcDidFinishLoadHandler() {
+			console.log('cleared the callback 1');
+			winston.info("waitForCss re-injecting after page change while waiting.", {cssSelector:cssSelector, silent:silent})
+			_waitForCss(cssSelector, silent);
+		}
+
+		bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
+
+		onNextActionCompleted(safeCallback);
+		_waitForCss(cssSelector, silent)
+
 	}
 
 	this.waitForDownload = function(service, date, callback) {
@@ -189,37 +278,37 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			printBackground: true
 		}, function(error, data) {
 
-	     if (error) {
-				 callback(error);
-			 }
+			if (error) {
+				callback(error);
+			}
 
 
-			 const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
-			 const fileHash = checksum(data);
-			 const urlHash = checksum(bw.webContents.getURL());
-			 var fileName = serviceName+"_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
-			 const dumpDirectory = serviceName+"/"+momentDate.format("YYYY-MM")+"/";
+			const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
+			const fileHash = checksum(data);
+			const urlHash = checksum(bw.webContents.getURL());
+			var fileName = serviceName+"_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
+			const dumpDirectory = serviceName+"/"+momentDate.format("YYYY-MM")+"/";
 
-			 mkdirpAsync(fileDirectory)
-			 .then(() => {
-				 fs.writeFile(fileDirectory + fileName, data, function(error) {
-		       if (error) {
-						 callback(error)
-					 }
-					 console.log("*** SAVED AS PDF!!!", fileName);
-					 self.emitter.emit('fileDownloaded', {
-						 fileHash: fileHash,
-						 fileName: fileName,
-						 pdfURL: bw.webContents.getURL(),
-						 connectorID: modelConnector._id,
-						 localFileName: fileDirectory + fileName,
-						 dumpDirectory: dumpDirectory
-					 })
+			mkdirpAsync(fileDirectory)
+			.then(() => {
+				fs.writeFile(fileDirectory + fileName, data, function(error) {
+					if (error) {
+						callback(error)
+					}
+					console.log("*** SAVED AS PDF!!!", fileName);
+					self.emitter.emit('fileDownloaded', {
+						fileHash: fileHash,
+						fileName: fileName,
+						pdfURL: bw.webContents.getURL(),
+						connectorID: modelConnector._id,
+						localFileName: fileDirectory + fileName,
+						dumpDirectory: dumpDirectory
+					})
 
-					 callback();
-		     })
-			 })
-	   })
+					callback();
+				})
+			})
+		})
 	}
 
 	function noOpToBrowser() {
@@ -230,25 +319,29 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 	function sendToBrowser(data) {
+		const currentStack = new Error();
+
 		safeBrowserWindowSync((bw) => {
-			if (bw.canReceiveOrder === true) {
-				if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
-					winston.error("Last message UUID is not null and we are trying to send another one", {messageName: messageName, data: data})
-					throw new Error("Last message UUID is not null and we are trying to send another one");
-				}
-				if (data.messageUUID) {
-					throw new Error("data.messageUUID is already defined!");
-				}
-				data.messageUUID = messageUUIDCounter++;
-				lastMessageUUID = data.messageUUID;
-				winston.info('sending message to browser', {messageName: messageName, data: data})
-				bw.send(messageName, data);
-			} else {
-				winston.info('can not receive order right now, postponing!');
-				setTimeout(function() {
-					sendToBrowser(data);
-				}, 500);
+			// if (bw.canReceiveOrder === true) {
+			if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
+				winston.error("Last message UUID is not null and we are trying to send another one", {lastMessageUUID: lastMessageUUID, newData: JSON.stringify(data), lastMessageData:JSON.stringify(lastMessageData)});
+				throw new Error("Last message UUID is not null and we are trying to send another one");
 			}
+			if (data.messageUUID) {
+				throw new Error("data.messageUUID is already defined!");
+			}
+			data.messageUUID = messageUUIDCounter++;
+			setlastMessageUUID(data.messageUUID);
+			lastMessageData = data;
+			winston.info('sending message to browser', {messageName: messageName, data: data})
+			bw.send(messageName, data);
+			// } else {
+			// 	winston.info('can not receive order right now, postponing!');
+			//
+			// 	setTimeout(function() {
+			// 		sendToBrowser(data);
+			// 	}, 3000);
+			// }
 		})
 
 	}
@@ -262,7 +355,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 				console.log("no originalMessageUUID for this message!", args)
 				throw new Error("no originalMessageUUID for this message!");
 			}
-			lastMessageUUID = null;
+			setlastMessageUUID(null);
 			winston.info('got done doneExecuting message', {args: args});
 			if (args.errorMessage) {
 				callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
@@ -288,11 +381,16 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		function didLoadFinishHandler(ax) {
 			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
 			clearErrorTimeout();
-			lastMessageUUID = null;
+			setlastMessageUUID(null);
 			setTimeout(callback, 0);
 		}
 
-		// function didFailedLoadHandler(ax) {
+		function didFailedLoadHandler(ax) {
+			if (ax.url.indexOf('invoice/download') > -1) {
+					console.log('request browser:', ax)
+			}
+
+		}
 		//
 		// 	if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
 		// 		winston.error('http error: %s for url %s', ax.statusCode, ax.url)
@@ -307,9 +405,14 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
-			bw.webContents.once('did-finish-load', didLoadFinishHandler);
+			bw.webContents.session.webRequest.onSendHeaders(['*'], (ax) => {
+				if (ax.url.indexOf('invoice/download') > -1) {
+						console.log('request browser:', ax)
+				}
+			})
+			bw.webContents.once('runloop-ready', didLoadFinishHandler);
 			scheduleErrorTimeout(() => {
-				bw.webContents.removeListener('did-finish-load', didLoadFinishHandler);
+				bw.webContents.removeListener('runloop-ready', didLoadFinishHandler);
 			})
 		})
 
@@ -338,7 +441,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.cookies.get({}, function(err, cookies) {
 					const cookiesForDomain = cookies.filter((cookie) => {
-						if (fileURL.host.indexOf(cookie.domain) > -1) {
+
+						if (tough.domainMatch(fileURL.host, cookie.domain, true)
+						&& tough.pathMatch(fileURL.pathname, cookie.path)) {
+							// cookie.value = '';
+							// console.log('matching cookie ', item.getURL(), cookie)
 							return true;
 						}
 
@@ -353,7 +460,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 						headers.Cookie = ca.join(';');
 					}
 
-					console.log('headers are: ', headers.Cookie.length)
+					console.log('headers are: ', headers, headers.Cookie.length)
 
 					var requestOptions = {
 						uri: fileURL.href,
@@ -377,10 +484,11 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 							callback(customError);
 						})
 						.on('response', function(response) {
-								winston.info('download response code: %s', response.statusCode)
-								if (response.statusCode < 200 || response.statusCode >= 400) {
-										callback(new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
-								}
+							winston.info('download response code: %s', response.statusCode)
+							if (response.statusCode < 200 || response.statusCode >= 400) {
+
+								callback(new Error("Got status out of 200 for " + requestOptions.uri+" statusCode: "+response.statusCode));
+							}
 
 						})
 						.pipe(fs.createWriteStream(fileFullPath))
@@ -427,7 +535,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		function doneDownloadingHandler()  {
 			clearErrorTimeout();
-			lastMessageUUID = null;
+			setlastMessageUUID(null);
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			})
