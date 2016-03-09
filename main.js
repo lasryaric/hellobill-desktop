@@ -16,8 +16,6 @@ const fs = require('fs');
 const dotenv = require('dotenv');
 
 
-
-
 require('winston-loggly');
 
 
@@ -33,6 +31,11 @@ if (process.env.NODE_ENV) {
 const FSClient = require('./lib/utils/FSClient')
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
+if (process.env.LOADED_FILE !== 'production') {
+  require('trace'); // active long stack trace
+  require('clarify'); // Exclude node internal calls from the stack
+  Error.stackTraceLimit = Infinity;
+}
 
 // Module to control application life.
 const app = electron.app;
@@ -109,7 +112,7 @@ function createWindow () {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
       months = months.reverse();
-      // months = ['2015-10']
+      // months = ['2015-12']
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
@@ -135,7 +138,7 @@ function createWindow () {
       }
 
       var total = immutableConnectors.size * months.length;
-      var counter = 1;
+      var counter = 0;
 
       return bluebird
       .each(immutableConnectors, (modelConnector) => {
@@ -146,7 +149,7 @@ function createWindow () {
           const thisMoment = moment(monthStr, "YYYY-MM");
           const modelConnectorJS = modelConnector.toJS();
 
-          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+counter+'/'+total+')'});
+          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+parseInt((counter/total * 100), 10)+'%)'});
           counter++;
 
           if (doNotRetryList.has(modelConnector.get('_id'))) {

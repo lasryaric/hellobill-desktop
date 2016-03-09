@@ -14,7 +14,6 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const Cookie = tough.Cookie;
 
 
 bluebird.promisifyAll(checksum);
@@ -22,8 +21,8 @@ const messageName = 'invokeAction';
 
 class MyEmitter extends EventEmitter {}
 
-var timeoutCounter = 0;
-var _errorTimeout = null;
+
+
 
 function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
@@ -134,11 +133,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		};
 
 		sendToBrowser(message);
-		function myCallback() {
-			console.log('******** called with args: ', arguments);
-			return callback();
-		}
-		onNextActionCompleted(myCallback);
+
+		onNextActionCompleted(callback);
 	}
 
 	this.waitForPage = function(callback) {
@@ -208,7 +204,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 	this.waitForCss = function(cssSelector, silent, callback) {
-		winston.info('calling super waitForCss with selector: %s', cssSelector)
+		winston.info('calling super waitForCss with selector: ', cssSelector)
 
 		if (!callback) {
 			callback = silent;
@@ -241,7 +237,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			bw.webContents.removeListener('runloop-ready', wfcDidFinishLoadHandler);
 			console.log('cleared the callback 2');
 			return callback.apply(null, arguments);
-		};
+		}
 
 		function wfcDidFinishLoadHandler() {
 			console.log('cleared the callback 1');
@@ -319,8 +315,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 	function sendToBrowser(data) {
-		const currentStack = new Error();
-
 		safeBrowserWindowSync((bw) => {
 			// if (bw.canReceiveOrder === true) {
 			if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
@@ -356,7 +350,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 				throw new Error("no originalMessageUUID for this message!");
 			}
 			setlastMessageUUID(null);
-			winston.info('got done doneExecuting message', {args: args});
+			winston.info('got done doneExecuting message', args);
 			if (args.errorMessage) {
 				callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
 			} else {
@@ -385,12 +379,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			setTimeout(callback, 0);
 		}
 
-		function didFailedLoadHandler(ax) {
-			if (ax.url.indexOf('invoice/download') > -1) {
-					console.log('request browser:', ax)
-			}
-
-		}
+		// function didFailedLoadHandler(ax) {
 		//
 		// 	if ([500, 404, 400].indexOf(ax.statusCode) > -1) {
 		// 		winston.error('http error: %s for url %s', ax.statusCode, ax.url)
@@ -405,11 +394,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
-			bw.webContents.session.webRequest.onSendHeaders(['*'], (ax) => {
-				if (ax.url.indexOf('invoice/download') > -1) {
-						console.log('request browser:', ax)
-				}
-			})
+
 			bw.webContents.once('runloop-ready', didLoadFinishHandler);
 			scheduleErrorTimeout(() => {
 				bw.webContents.removeListener('runloop-ready', didLoadFinishHandler);
@@ -442,10 +427,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 				bw.webContents.session.cookies.get({}, function(err, cookies) {
 					const cookiesForDomain = cookies.filter((cookie) => {
 
-						if (tough.domainMatch(fileURL.host, cookie.domain, true)
-						&& tough.pathMatch(fileURL.pathname, cookie.path)) {
-							// cookie.value = '';
-							// console.log('matching cookie ', item.getURL(), cookie)
+						if (tough.domainMatch(fileURL.host, cookie.domain, true) && tough.pathMatch(fileURL.pathname, cookie.path)) {
 							return true;
 						}
 
@@ -459,8 +441,6 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 					if (ca) {
 						headers.Cookie = ca.join(';');
 					}
-
-					console.log('headers are: ', headers, headers.Cookie.length)
 
 					var requestOptions = {
 						uri: fileURL.href,
@@ -555,7 +535,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		}
 	}
 
-	function scheduleErrorTimeout(callback) {
+	function scheduleErrorTimeout() {
 
 		// _errorTimeout = setTimeout(((localTimeCounter) => {
 		// 	return () => {

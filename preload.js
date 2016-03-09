@@ -101,6 +101,7 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 
 	console.log('runnerElementExists: ', cssSelector, elementExists)
 	// callback(null, originalMessage);
+
 	callback(null, originalMessage, {
 		elementExists: elementExists
 	});
@@ -214,7 +215,7 @@ function remoteLog(message) {
 
 function __hellobillLoop() {
 	// remoteLog('Starting the browser runLoop')
-
+	
 	window.__hellobill.ipc.on('invokeAction', function(event, message) {
 
 
