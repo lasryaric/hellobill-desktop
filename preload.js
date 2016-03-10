@@ -136,7 +136,7 @@ function runnerWaitForCss(cssSelector, silent, originalMessage, callback) {
 
 function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 	var called = 0;
-
+	const cssStringified = JSON.stringify(csss)
 
 	function checkit() {
 
@@ -167,11 +167,12 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 
 			return ;
 		} else if (called < 10) {
-			remoteLog('runnerWaitForCss: Did not find ' + csss+', called: '+called+'/10');
+
+			remoteLog('runnerWaitForCss: Did not find ' + cssStringified+', called: '+called+'/10');
 			setTimeout(checkit, 500);
 			called++;
 		} else if (silent === false) {
-			callback(new Error('runnerWaitForCss: could not find cssSelector: '+csss), originalMessage);
+			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssStringified), originalMessage);
 		} else {
 			elementExists.elementExists = false;
 			elementExists.ex = false;
@@ -215,7 +216,7 @@ function remoteLog(message) {
 
 function __hellobillLoop() {
 	// remoteLog('Starting the browser runLoop')
-	
+
 	window.__hellobill.ipc.on('invokeAction', function(event, message) {
 
 
