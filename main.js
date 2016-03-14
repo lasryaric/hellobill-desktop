@@ -14,6 +14,8 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
+var Menu = require("menu");
+
 
 
 require('winston-loggly');
@@ -51,6 +53,27 @@ let appWindow;
 function createWindow () {
   // Create the browser window.
 
+  var template = [{
+      label: "Application",
+      submenu: [
+          { label: "About Application", selector: "orderFrontStandardAboutPanel:" },
+          { type: "separator" },
+          { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
+      ]}, {
+      label: "Edit",
+      submenu: [
+          { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+          { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+          { type: "separator" },
+          { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+          { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+          { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+          { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
+      ]}
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+
   appWindow = new BrowserWindow({width: 1200, height: 600, nodeIntegration: true, show:true,
     "web-preferences": {
       "web-security": false
@@ -67,7 +90,13 @@ function createWindow () {
       winston.info('< ' + message.message)
     })
 
+    var testingCredentials = false;
     ipcMain.on('TestCrendentials', (ax, modelConnectorJS) => {
+        if (true === testingCredentials) {
+          winston.error("Already testing credentials, can't test now");
+          return ;
+        }
+        testingCredentials = true;
         const modelConnector = immutable.fromJS(modelConnectorJS);
         const cr = new ConnectorsRunner();
 
@@ -81,6 +110,7 @@ function createWindow () {
           appWindow.send('TestCrendentialsResult', {success:false})
         })
         .finally(() => {
+          testingCredentials = false;
           return cr.closeBrowserWindow();
         })
     })
