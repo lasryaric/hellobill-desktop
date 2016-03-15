@@ -139,7 +139,7 @@ function createWindow () {
       var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment("2016-02", dateFormat);
+      const startDate = moment("2015-01", dateFormat);
       const now = moment();
       var months = [];
 
