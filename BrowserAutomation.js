@@ -298,7 +298,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 						pdfURL: bw.webContents.getURL(),
 						connectorID: modelConnector._id,
 						localFileName: fileDirectory + fileName,
-						dumpDirectory: dumpDirectory
+						dumpDirectory: dumpDirectory,
+						name: serviceName,
 					})
 
 					callback();
@@ -489,7 +490,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 									fileName: remoteFileName,
 									connectorID: modelConnector._id,
 									localFileName: fileFullPath,
-									dumpDirectory: dumpDirectory
+									dumpDirectory: dumpDirectory,
+									name: serviceName,
 								})
 							})
 

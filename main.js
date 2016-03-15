@@ -18,6 +18,7 @@ var Menu = require("menu");
 
 
 
+
 require('winston-loggly');
 
 
@@ -31,6 +32,10 @@ if (process.env.NODE_ENV) {
 }
 
 const FSClient = require('./lib/utils/FSClient')
+const Slack = require('./lib/utils/Slack');
+const StrFormat = require('./lib/utils/StrFormat');
+
+
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
 if (process.env.LOADED_FILE !== 'production') {
@@ -117,6 +122,9 @@ function createWindow () {
 
     ipcMain.on('fetchMyBills', (ax, data) => {
       winston.info("Got fetch my bills order!");
+      const sessionStats = {};
+      const connectorsList = data.map((connector) => { return connector.name }).join(', ');
+      Slack.sendMessage('Got fetchMyBill order for user '+mUserMe.email+' with the following connectors: ' + connectorsList);
       if (false === fs.existsSync(mUserMe.destinationFolder)) {
         electron.dialog.showMessageBox(null, {
           title: "Read this",
@@ -131,7 +139,7 @@ function createWindow () {
       var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment("2015-01", dateFormat);
+      const startDate = moment("2016-02", dateFormat);
       const now = moment();
       var months = [];
 
@@ -149,6 +157,10 @@ function createWindow () {
 
       function fileDownloadedHandler(data) {
         console.log('file downloaded!', data)
+        if (!sessionStats[data.name]) {
+          sessionStats[data.name] = 1;
+        }
+        sessionStats[data.name]++;
 
         var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
         console.log('dump: %s, %s, %s', data.localFileName, remotepath)
@@ -229,7 +241,11 @@ function createWindow () {
         return monthPromise;
       })
       .then(() => {
+        setTimeout(() => {
+          Slack.sendMessage('Done fetching bills for '+mUserMe.email+', details: '+ StrFormat.hashMapToString(sessionStats))
+        }, 1000)
         appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
+
       })
 
     });
