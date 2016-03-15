@@ -15,6 +15,8 @@ const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
 var Menu = require("menu");
+var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
+
 
 
 
@@ -22,7 +24,7 @@ var Menu = require("menu");
 require('winston-loggly');
 
 
-winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false });
+// winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false });
 
 
 if (process.env.NODE_ENV) {
@@ -150,7 +152,7 @@ function createWindow () {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
       months = months.reverse();
-      // months = ['2015-12']
+      // months = ['2015-12', '2016-01', '2016-02'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
@@ -346,7 +348,6 @@ function createWindow () {
   }
 
   var initLoggerOnce = _.once((email) =>  {
-
     if (process.env.LOADED_FILE !== "production") {
       console.log("Not enabling the logger because we are not in production. We are in: ", process.env.NODE_ENV);
 
@@ -364,6 +365,18 @@ function createWindow () {
       tags: ['desktopApp', userTag],
       json:true,
     });
+
+    var s3_stream = new S3StreamLogger({
+                 bucket: "hellobilllogs",
+          access_key_id: process.env.AWS_KEY,
+      secret_access_key: process.env.AWS_SECRET,
+      name_format: email+'/%Y-%m-%d-%H-%M-%S-%L.log',
+    });
+
+    winston.add(winston.transports.File, {
+      stream: s3_stream,
+      json: false
+    })
   });
 
 
@@ -392,3 +405,14 @@ function createWindow () {
 
     return bestDirectory;
   }
+
+
+
+  process.on('uncaughtException', (err) => {
+    const errorProps = {
+      errName: err.name,
+      errMessage: err.message,
+      errStack: err.stack
+    }
+    winston.error('uncaughtException:', {errorProps: errorProps})
+  });
