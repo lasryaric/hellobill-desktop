@@ -265,7 +265,9 @@ function createWindow () {
 
     ipcMain.on('userMe', function(ax, mUser) {
       winston.info('updating userMe: ', mUser);
-
+      if (mUserMe === null && mUser && mUser.email) {
+        Slack.sendMessage('The following user just opened the app: '+ mUser.email);
+      }
       mUserMe = mUser;
       if (!mUserMe.destinationFolder) {
         const bestFolderFound = findBestTargetFolder();
