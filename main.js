@@ -122,7 +122,15 @@ function createWindow () {
         })
     })
 
+    var _fetchMyBillsLock = false;
+
     ipcMain.on('fetchMyBills', (ax, data) => {
+      if (true === _fetchMyBillsLock) {
+        winston.info('fetchMyBills is locked!');
+
+        return ;
+      }
+      _fetchMyBillsLock = true;
       winston.info("Got fetch my bills order!");
       const sessionStats = {};
       const connectorsList = data.map((connector) => { return connector.name }).join(', ');
@@ -152,7 +160,7 @@ function createWindow () {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
       months = months.reverse();
-      // months = ['2015-12', '2016-01', '2016-02'];
+      // months = ['2015-12'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
@@ -189,7 +197,8 @@ function createWindow () {
         const cr = new ConnectorsRunner();
         cr.on('fileDownloaded', fileDownloadedHandler);
 
-        const monthPromise = bluebird.each(months, (monthStr) => {
+          return bluebird
+          .each(months, (monthStr) => {
           const thisMoment = moment(monthStr, "YYYY-MM");
           const modelConnectorJS = modelConnector.toJS();
 
@@ -232,24 +241,24 @@ function createWindow () {
             console.log('Adding %s to the doNotRetryList: ', doNotRetryList.has(modelConnector.get('_id')));
 
           })
-        });
-        monthPromise
-        .then(() => {
-          return cr.closeBrowserWindow();
-          cr.removeListener('fileDownloaded', fileDownloadedHandler);
         })
+        .then(() => {
+          cr.removeListener('fileDownloaded', fileDownloadedHandler);
+          return cr.closeBrowserWindow();
 
-
-        return monthPromise;
+        })
+      })
+      .catch((err) => {
+        winston.error('We got an error in main: ', {err:err.message, errName: err.name})
       })
       .then(() => {
+        _fetchMyBillsLock = false;
+
         setTimeout(() => {
           Slack.sendMessage('Done fetching bills for '+mUserMe.email+', details: '+ StrFormat.hashMapToString(sessionStats))
         }, 1000)
         appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
-
       })
-
     });
 
 
