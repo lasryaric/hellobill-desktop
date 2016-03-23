@@ -4,6 +4,7 @@ const github = require('./GithubDownloader')
 const skype = require('./SkypeDownloader')
 const awsmain = require('./AwsmainDownloader')
 const amazon = require('./AmazonDownloader')
+const amazonfr = require('./AmazonfrDownloader')
 const uber = require('./UberDownloader')
 
 module.exports = {
@@ -13,4 +14,5 @@ module.exports = {
   awsmain: awsmain,
   uber: uber,
   amazon: amazon,
+  amazonfr: amazonfr,
 };
