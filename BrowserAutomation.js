@@ -265,6 +265,19 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	}
 
+	this.clientSideFunction = function(service, date, functionName, callback) {
+		const message = {
+			action: 'clientSideFunction',
+			service: service,
+			date: date.format("YYYY-MM"),
+			functionName: functionName,
+		};
+
+		sendToBrowser(message);
+
+		onNextActionCompleted(callback);
+	}
+
 	this.setIsClosing = function() {
 		isClosing = true;
 	}
@@ -572,6 +585,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
 
 		return p;
+	}
+
+	this.getURL = function() {
+		return bw.getURL();
 	}
 
 	bluebird.promisifyAll(this);

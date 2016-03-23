@@ -166,7 +166,7 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 			callback(null, originalMessage, elementExists);
 
 			return ;
-		} else if (called < 10) {
+		} else if (called < 20) {
 
 			remoteLog('runnerWaitForCss: Did not find ' + cssStringified+', called: '+called+'/10');
 			setTimeout(checkit, 500);
@@ -188,6 +188,19 @@ function runnerDownload(serviceName, date, originalMessage) {
 
 	remoteLog('runnerDownload with serviceName: '+ serviceName+' date:' + date)
 	downloader.download(date);
+}
+
+function executeClientSideFunction(serviceName, date, functionName, originalMessage, callback) {
+	const downloader = window.__hb.downloaders[serviceName];
+
+	remoteLog('functionName with serviceName: '+ serviceName+' date:' + date+' functioName:' + functionName);
+	downloader[functionName](date)
+	.then((result) => {
+		callback(null, originalMessage, result);
+	})
+	.catch((err) => {
+		callback(err, originalMessage);
+	})
 }
 
 function whenDone(error, originalMessage, resultData) {
@@ -242,6 +255,8 @@ function __hellobillLoop() {
 		runnerGetAttribute(message.cssSelector, message.attribute, message, whenDone);
 	} else if (message.action === 'waitForDownload') {
 		runnerDownload(message.service, message.date, message, whenDone);
+	} else if (message.action === 'clientSideFunction') {
+		executeClientSideFunction(message.service, message.date, message.functionName, message, whenDone)
 	} else {
 		console.log('got an unknown message:', message);
 	}
