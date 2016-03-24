@@ -235,7 +235,9 @@ function __hellobillLoop() {
 	}
 	});
 
-	window.__hellobill.ipc.send('RunloopStarted');
+	setTimeout(function() {
+		window.__hellobill.ipc.send('RunloopStarted');
+	}, 50);
 }
 
 
