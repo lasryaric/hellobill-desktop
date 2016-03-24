@@ -5,6 +5,7 @@ const skype = require('./SkypeDownloader')
 const awsmain = require('./AwsmainDownloader')
 const amazon = require('./AmazonDownloader')
 const amazonfr = require('./AmazonfrDownloader')
+const gandi = require('./GandiDownloader')
 const uber = require('./UberDownloader')
 
 module.exports = {
@@ -15,4 +16,5 @@ module.exports = {
   uber: uber,
   amazon: amazon,
   amazonfr: amazonfr,
+  gandi: gandi,
 };

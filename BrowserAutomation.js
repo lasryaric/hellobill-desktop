@@ -56,7 +56,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	function safeBrowserWindowSync(callback) {
 		if (isClosing === true) {
-			winston.verbose("We are closing, sorry.")
+			winston.error("We are closing, sorry.")
 
 			return ;
 		}

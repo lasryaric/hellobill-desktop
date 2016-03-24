@@ -48,7 +48,7 @@ function runnerTypeText(cssSelector, text, originalMessage, callback) {
 
 	console.log('runnerTypeText: ', cssSelector)
 	if (!domElemement || domElemement.length === 0) {
-		callback(new Error("runnerTypeText: dom element not found for css selector: "+ cssSelector));
+		callback(new Error("runnerTypeText: dom element not found for css selector: "+ cssSelector), originalMessage);
 
 		return ;
 	}
@@ -105,33 +105,6 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 	callback(null, originalMessage, {
 		elementExists: elementExists
 	});
-}
-
-function runnerWaitForCss(cssSelector, silent, originalMessage, callback) {
-	var called = 0;
-
-	function checkit() {
-		var domElemement = document.querySelectorAll(cssSelector);
-		var elementExists = { };
-
-		if (domElemement.length > 0) {
-			elementExists.elementExists = true;
-			callback(null, originalMessage, elementExists);
-
-			return ;
-		} else if (called < 10) {
-			remoteLog('runnerWaitForCss: Did not find ' + cssSelector+', called: '+called+'/10');
-			setTimeout(checkit, 500);
-			called++;
-		} else if (silent === false) {
-			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssSelector), originalMessage);
-		} else {
-			elementExists.elementExists = false;
-			callback(null, originalMessage, elementExists);
-		}
-	}
-
-	checkit();
 }
 
 function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {

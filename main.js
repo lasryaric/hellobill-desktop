@@ -87,9 +87,11 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/4/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/5/app/authenticate');
 
-    //appWindow.webContents.openDevTools();
+    if (process.env.LOADED_FILE !== 'production') {
+      appWindow.webContents.openDevTools();
+    }
 
 
     ipcMain.on('remoteLog', function(sender, message) {
@@ -160,7 +162,7 @@ function createWindow () {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
       months = months.reverse();
-      // months = ['2015-12'];
+      // months = ['2015-01'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
