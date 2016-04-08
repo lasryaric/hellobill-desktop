@@ -156,8 +156,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			url: url
 		};
 
+		onNextPageLoad(callback, url);
 		sendToBrowser(message);
-		onNextPageLoad(callback);
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -383,8 +383,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 
-	function onNextPageLoad(callback) {
-
+	function onNextPageLoad(callback, url) {
+		url = url || 'unknown';
 
 		function didLoadFinishHandler(ax) {
 			winston.info('executing didLoadFinishHandler url: %s', ax.sender.getURL())
@@ -405,11 +405,12 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		// 		})
 		// 	}
 		// }
-
+		winston.info('Asked to listen on url %s', url)
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
 
 			bw.webContents.once('runloop-ready', didLoadFinishHandler);
+			winston.info('now listening on url %s', url)
 			scheduleErrorTimeout(() => {
 				bw.webContents.removeListener('runloop-ready', didLoadFinishHandler);
 			})
