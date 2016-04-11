@@ -6,6 +6,7 @@ const awsmain = require('./AwsmainDownloader')
 const amazon = require('./AmazonDownloader')
 const amazonfr = require('./AmazonfrDownloader')
 const gandi = require('./GandiDownloader')
+const bouygues = require('./BouyguesDownloader')
 const uber = require('./UberDownloader')
 
 module.exports = {
@@ -17,4 +18,5 @@ module.exports = {
   amazon: amazon,
   amazonfr: amazonfr,
   gandi: gandi,
+  bouygues: bouygues,
 };
