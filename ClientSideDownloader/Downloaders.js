@@ -7,6 +7,7 @@ const amazon = require('./AmazonDownloader')
 const amazonfr = require('./AmazonfrDownloader')
 const gandi = require('./GandiDownloader')
 const bouygues = require('./BouyguesDownloader')
+const facebookads = require('./FacebookadsDownloader')
 const uber = require('./UberDownloader')
 
 module.exports = {
@@ -19,4 +20,5 @@ module.exports = {
   amazonfr: amazonfr,
   gandi: gandi,
   bouygues: bouygues,
+  facebookads: facebookads,
 };

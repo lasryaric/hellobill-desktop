@@ -457,7 +457,8 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 			var fileURL = url.parse(item.getURL());
 			var headers = {
-				"Cookie": null
+				"Cookie": null,
+				"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
 			}
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.cookies.get({}, function(err, cookies) {
