@@ -42,14 +42,14 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 
 	function setlastMessageUUID(value) {
-			if (value === null) {
-				console.log('clean lastMessageUUID, value about to be cleaned: ', lastMessageUUID)
+		if (value === null) {
+			console.log('clean lastMessageUUID, value about to be cleaned: ', lastMessageUUID)
 
-			} else {
-				console.log('Setting lastMessageUUID, curent value, new value', lastMessageUUID, value)
-			}
-			// console.trace();
-			lastMessageUUID = value;
+		} else {
+			console.log('Setting lastMessageUUID, curent value, new value', lastMessageUUID, value)
+		}
+		// console.trace();
+		lastMessageUUID = value;
 	}
 
 
@@ -150,7 +150,7 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		setTimeout(callback, millisec);
 	}
 
-	this.goto = function(url, callback) {
+	this._goto = function(url, callback) {
 		const message = {
 			action: 'goto',
 			url: url
@@ -158,6 +158,27 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 		onNextPageLoad(callback, url);
 		sendToBrowser(message);
+	}
+
+	this.goto = function(url, callback) {
+		var gotoTimeout = setTimeout(function() {
+			var e = new Error("Calling the safe timeout of BrowserAutomation.goto() for url "+url+", something is wrong!");
+			if (process.env.LOADED_FILE === 'production') {
+
+				winston.error("Calling the safe timeout of BrowserAutomation.goto() for url %s, something is wrong! Stacktrace is: \n %s", url, e.stack);
+
+				this._goto(url, callback);
+			} else  {
+				throw e;
+			}
+		}.bind(this), 45000);
+
+		function safeCallback() {
+			clearTimeout(gotoTimeout);
+			callback();
+		}
+		this._goto(url, safeCallback);
+
 	}
 
 	this.waitForURL = function(urls, callback) {
