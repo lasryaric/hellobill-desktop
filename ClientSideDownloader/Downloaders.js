@@ -9,6 +9,7 @@ const gandi = require('./GandiDownloader')
 const bouygues = require('./BouyguesDownloader')
 const facebookads = require('./FacebookadsDownloader')
 const uber = require('./UberDownloader')
+const ovh = require('./OvhDownloader')
 
 module.exports = {
   adobe: adobe,
@@ -21,4 +22,5 @@ module.exports = {
   gandi: gandi,
   bouygues: bouygues,
   facebookads: facebookads,
+  ovh: ovh,
 };
