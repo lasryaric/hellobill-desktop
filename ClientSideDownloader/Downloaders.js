@@ -10,6 +10,7 @@ const bouygues = require('./BouyguesDownloader')
 const facebookads = require('./FacebookadsDownloader')
 const uber = require('./UberDownloader')
 const ovh = require('./OvhDownloader')
+const dropbox = require('./DropboxDownloader')
 
 module.exports = {
   adobe: adobe,
@@ -23,4 +24,5 @@ module.exports = {
   bouygues: bouygues,
   facebookads: facebookads,
   ovh: ovh,
+  dropbox: dropbox,
 };
