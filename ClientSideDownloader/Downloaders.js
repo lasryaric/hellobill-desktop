@@ -11,6 +11,7 @@ const facebookads = require('./FacebookadsDownloader')
 const uber = require('./UberDownloader')
 const ovh = require('./OvhDownloader')
 const dropbox = require('./DropboxDownloader')
+const slack = require('./SlackDownloader')
 
 module.exports = {
   adobe: adobe,
@@ -25,4 +26,5 @@ module.exports = {
   facebookads: facebookads,
   ovh: ovh,
   dropbox: dropbox,
+  slack: slack,
 };
