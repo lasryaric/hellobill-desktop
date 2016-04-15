@@ -89,7 +89,7 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/9/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/10/app/authenticate');
 
     if (process.env.LOADED_FILE !== 'production') {
       appWindow.webContents.openDevTools();
