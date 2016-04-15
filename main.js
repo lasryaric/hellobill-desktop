@@ -157,7 +157,8 @@ function createWindow () {
           buttons:['ok got it'],
         })
 
-
+        _fetchMyBillsLock = false;
+        
         return ;
       }
       var immutableConnectors = immutable.fromJS(data);
