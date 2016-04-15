@@ -439,8 +439,22 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 
 	}
 
-	function onNextDownload(dateInstance, callback) {
+	function onNextDownload(dateInstance, cb) {
+		var downloadTimeout = null;
+
+		var callback = function() {
+			clearTimeout(downloadTimeout);
+			cb.apply(this, arguments);
+
+		}.bind(this);
+
 		callback = _.once(callback);
+		downloadTimeout = setTimeout(() => {
+			console.log('****** DOWNLOAD FAILED, calling callback!');
+			_onErrorCleanUp(new Error("Download timeout..."))
+			callback();
+		}, 45000);
+
 		scheduleErrorTimeout(() => {
 			_onErrorCleanUp(new Error("We never heard back from the downloader"));
 		});
@@ -570,6 +584,10 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 		function _onErrorCleanUp(err) {
 			winston.info('Cleaning up the onNextDownload cycle because we got the following error:', {err: err});
 			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
+			safeBrowserWindowSync((bw) => {
+				bw.webContents.session.removeListener('will-download', willDownloadHandler);
+			})
+			setlastMessageUUID(null);
 		}
 	}
 

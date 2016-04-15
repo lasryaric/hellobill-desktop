@@ -260,6 +260,7 @@ function createWindow () {
           Slack.sendMessage('Done fetching bills for '+mUserMe.email+', details: '+ StrFormat.hashMapToString(sessionStats))
         }, 1000)
         appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
+        appWindow.webContents.send('FetchItAgain', {});
       })
     });
 
