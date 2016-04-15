@@ -33,6 +33,8 @@ if (process.env.NODE_ENV) {
   dotenv.load({ path: __dirname+'/.env.production' });
 }
 
+const supportedConnectors = ['uber', 'awsmain', 'github'];
+
 const FSClient = require('./lib/utils/FSClient')
 const Slack = require('./lib/utils/Slack');
 const StrFormat = require('./lib/utils/StrFormat');
@@ -126,12 +128,22 @@ function createWindow () {
 
     var _fetchMyBillsLock = false;
 
-    ipcMain.on('fetchMyBills', (ax, data) => {
+    ipcMain.on('fetchMyBills', (ax, datalist) => {
       if (true === _fetchMyBillsLock) {
         winston.info('fetchMyBills is locked!');
 
         return ;
       }
+      if (!datalist || !datalist.filter) {
+        winston.error('datalist || datalist.filter are null', datalist);
+
+        return ;
+      }
+      var data = datalist.filter((connector) => {
+        return (supportedConnectors.indexOf(connector.name) > -1);
+      });
+      winston.info("Lets go with the following connectors: %s", data.join(','));
+
       _fetchMyBillsLock = true;
       winston.info("Got fetch my bills order!");
       const sessionStats = {};
@@ -151,7 +163,7 @@ function createWindow () {
       var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment("2015-01", dateFormat);
+      const startDate = moment("2016-01", dateFormat);
       const now = moment();
       var months = [];
 
