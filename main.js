@@ -140,7 +140,7 @@ function createWindow () {
         return ;
       }
       var data = datalist.filter((connector) => {
-        return (supportedConnectors.indexOf(connector.name) > -1);
+        return true; // (supportedConnectors.indexOf(connector.name) > -1);
       });
       winston.info("Lets go with the following connectors: %s", data.join(','));
 
@@ -158,7 +158,7 @@ function createWindow () {
         })
 
         _fetchMyBillsLock = false;
-        
+
         return ;
       }
       var immutableConnectors = immutable.fromJS(data);
