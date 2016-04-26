@@ -21,13 +21,7 @@ var Menu = require("menu");
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 
-
-
-
-require('winston-loggly');
-
-
-// winston.add(winston.transports.File, { filename: 'hellobilllogs.log', json:false });
+// winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
 
 
 if (process.env.NODE_ENV) {
@@ -41,7 +35,7 @@ const supportedConnectors = ['uber', 'awsmain', 'github'];
 const FSClient = require('./lib/utils/FSClient')
 const Slack = require('./lib/utils/Slack');
 const StrFormat = require('./lib/utils/StrFormat');
-
+const appAutoUpdater = require('./lib/AppAutoUpdater')
 
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
@@ -92,7 +86,7 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/autoupdater');
 
     if (process.env.LOADED_FILE !== 'production') {
       appWindow.webContents.openDevTools();
@@ -348,6 +342,10 @@ function createWindow () {
           shell.showItemInFolder(folder);
         }
       })
+    })
+
+    ipcMain.on('CheckForAutoUpdater', () => {
+      appAutoUpdater(appWindow.webContents);
     })
   }
 
