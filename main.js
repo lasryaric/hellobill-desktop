@@ -4,6 +4,7 @@ const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
 const ConnectorsRunner = require('./lib/ConnectorsRunner');
+const ManualFixer = require('./lib/ManualFixer');
 const moment = require('moment');
 const _ = require('lodash');
 const bluebird = require('bluebird');
@@ -14,6 +15,8 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
+const AppConstants = require('./lib/constants/AppConstants');
+
 var Menu = require("menu");
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
@@ -89,7 +92,7 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/10/app/authenticate');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/authenticate');
 
     if (process.env.LOADED_FILE !== 'production') {
       appWindow.webContents.openDevTools();
@@ -117,13 +120,27 @@ function createWindow () {
           appWindow.send('TestCrendentialsResult', {success:true})
         })
         .catch((err) => {
-          console.log('credentials NOT valid!: ', err)
-          appWindow.send('TestCrendentialsResult', {success:false})
+          appWindow.send('TestCrendentialsResult', {success:false, errName: err.name})
         })
         .finally(() => {
           testingCredentials = false;
           return cr.closeBrowserWindow();
         })
+    })
+
+    ipcMain.on('ManualFixer', (ax, mConnector) => {
+      mConnector = immutable.fromJS(mConnector);
+      const serializedCredentials = keytar.getPassword('hellobil_desktopapp', mConnector.get('_id'));
+      const credentials = JSON.parse(serializedCredentials);
+      console.log('*** found credentials:', credentials);
+      var manualFixer = new ManualFixer(mConnector, credentials);
+      manualFixer.start();
+
+      ipcMain.once("CloseManualFixer", () => {
+        manualFixer.end();
+        appWindow.send('ManualFixerIsDone')
+
+      })
     })
 
     var _fetchMyBillsLock = false;
@@ -175,7 +192,7 @@ function createWindow () {
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
       months = months.reverse();
-      // months = ['2015-01'];
+      // months = ['2016-01'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
