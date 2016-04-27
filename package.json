@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "0.20.0",
+  "version": "0.20.2",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
@@ -24,7 +24,9 @@
   "homepage": "https://github.com/atom/electron-quick-start#readme",
   "devDependencies": {
     "electron-prebuilt": "^0.36.0",
-    "electron-rebuild": "^1.1.3"
+    "electron-rebuild": "^1.1.3",
+    "grunt": "^1.0.1",
+    "grunt-electron-installer": "^2.1.0"
   },
   "dependencies": {
     "axios": "^0.9.1",

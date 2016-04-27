@@ -21,7 +21,7 @@ var Menu = require("menu");
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 
-// winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
+winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
 
 
 if (process.env.NODE_ENV) {
