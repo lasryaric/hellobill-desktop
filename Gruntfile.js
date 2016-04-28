@@ -4,16 +4,12 @@ module.exports = function(grunt) {
   grunt.initConfig({
     'create-windows-installer': {
       x64: {
-        appDirectory: '/Users/ariclasry/Desktop/hellobill-win32-x64',
-        outputDirectory: '/Users/ariclasry/Desktop/',
-        authors: 'My App Inc.',
-        exe: 'myapp.exe'
-      },
-      ia32: {
-        appDirectory: '/Users/ariclasry/Desktop/hellobill-win32-x64',
-        outputDirectory: '/Users/ariclasry/Desktop/',
-        authors: 'My App Inc.',
-        exe: 'myapp.exe'
+        appDirectory: 'hellobill-win32-x64',
+        outputDirectory: './output',
+        exe: 'hellobill.exe',
+        noMsi: true,
+        setupExe:'Hellobill.exe',
+        remoteReleases: ''
       }
     }
   });

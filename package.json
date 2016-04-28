@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "0.20.2",
+  "version": "0.20.95",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "start",
     "tutorial"
   ],
-  "author": "GitHub",
+  "author": "Hellobill",
   "license": "CC0-1.0",
   "bugs": {
     "url": "https://github.com/atom/electron-quick-start/issues"

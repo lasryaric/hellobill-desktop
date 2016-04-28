@@ -352,6 +352,7 @@ function createWindow () {
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.on('ready', createWindow);
+  
 
   // Quit when all windows are closed.
   app.on('window-all-closed', function () {
@@ -456,3 +457,5 @@ function createWindow () {
     }
     winston.error('uncaughtException:', {errorProps: errorProps})
   });
+
+require('./lib/SquirelEventHandler.js')
