@@ -21,7 +21,7 @@ var Menu = require("menu");
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 
-winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
+//winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
 
 
 if (process.env.NODE_ENV) {
@@ -86,7 +86,7 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/account');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/autoupdater');
 
     if (process.env.LOADED_FILE !== 'production') {
       appWindow.webContents.openDevTools();
@@ -398,14 +398,6 @@ function createWindow () {
 
     const regexp = new RegExp('[a-z\_\.]', 'ig');
     const userTag = email.match(regexp).join('');
-
-    console.log('user tag is: ', userTag);
-    winston.add(winston.transports.Loggly, {
-      token: "b12892ce-f71b-4422-915f-2d7c4f841b0d",
-      subdomain: "hellobill",
-      tags: ['desktopApp', userTag],
-      json:true,
-    });
 
     var s3_stream = new S3StreamLogger({
                  bucket: "hellobilllogs",
