@@ -86,7 +86,7 @@ function createWindow () {
     }});
 
 
-    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/autoupdater');
+    appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/account');
 
     if (process.env.LOADED_FILE !== 'production') {
       appWindow.webContents.openDevTools();
@@ -352,7 +352,7 @@ function createWindow () {
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.on('ready', createWindow);
-  
+
 
   // Quit when all windows are closed.
   app.on('window-all-closed', function () {
