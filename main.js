@@ -139,21 +139,21 @@ function createWindow () {
 
     var _fetchMyBillsLock = false;
 
-    ipcMain.on('fetchMyBills', (ax, datalist) => {
+    ipcMain.on('fetchMyBills', (ax, fetchParams) => {
       if (true === _fetchMyBillsLock) {
         winston.info('fetchMyBills is locked!');
 
         return ;
       }
-      if (!datalist || !datalist.filter) {
+      if (!fetchParams.list || !fetchParams.list.filter) {
         winston.error('datalist || datalist.filter are null', datalist);
 
         return ;
       }
-      var data = datalist.filter((connector) => {
+      var data = fetchParams.list.filter((connector) => {
         return true; // (supportedConnectors.indexOf(connector.name) > -1);
       });
-      winston.info("Lets go with the following connectors: %s", data.join(','));
+      winston.info("Lets go with the following date %s", fetchParams.startDate);
 
       _fetchMyBillsLock = true;
       winston.info("Got fetch my bills order!");
@@ -175,7 +175,7 @@ function createWindow () {
       var immutableConnectors = immutable.fromJS(data);
 
       const dateFormat = "YYYY-MM";
-      const startDate = moment("2016-01", dateFormat);
+      const startDate = moment(fetchParams.startDate, dateFormat);
       const now = moment();
       var months = [];
 
