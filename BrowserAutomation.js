@@ -14,6 +14,9 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
+const knox = require('knox');
+const moment = require('moment');
+const os = require('os');
 
 
 bluebird.promisifyAll(checksum);
@@ -24,12 +27,28 @@ class MyEmitter extends EventEmitter {}
 
 
 
-function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
+function mainRunner(bw, serviceName, destinationFolder, email, modelConnector) {
 
-
+	var fsClient = knox.createClient({
+		key: process.env.AWS_KEY,
+		secret: process.env.AWS_SECRET,
+		bucket: "hellobilllogs",
+	});
+	bluebird.promisifyAll(fsClient);
+	bluebird.promisifyAll(bw);
+	bluebird.promisifyAll(bw.webContents);
 	var lastMessageUUID = null;
 	var lastMessageData = null;
 	var messageUUIDCounter = 1;
+
+	//catpurePage does not respect the first callback arg error standard
+	function capturePageAsync() {
+		return new Promise((yes) => {
+			bw.capturePage((nativeImage) => {
+				return yes(nativeImage);
+			})
+		})
+	}
 
 	this.emitter = new MyEmitter();
 	var self = this;
@@ -387,7 +406,36 @@ function mainRunner(bw, serviceName, destinationFolder, modelConnector) {
 			setlastMessageUUID(null);
 			winston.info('got done doneExecuting message', args);
 			if (args.errorMessage) {
-				callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
+				const correlatedFileName = moment().format();
+				const imageRemotePath = email+'/screenshots/'+serviceName+'/'+correlatedFileName+'.png';
+				const mhtmlRemotePath = email+'/mhtml/'+serviceName+'/'+correlatedFileName+'.mhtml';
+				const mhtmlLocalPath = os.tmpdir() + '/' + serviceName + '_'+correlatedFileName+'.mhtml';
+
+				capturePageAsync()
+				.then((nativeImage) => {
+					const PNGImage = nativeImage.toPng();
+
+					return fsClient.putBufferAsync(PNGImage, imageRemotePath, {'Content-Length': PNGImage.length})
+				})
+				.then(() => {
+					winston.info('successfully uploaded the screenshot %s', imageRemotePath)
+				})
+				.then(() => {
+					return bw.webContents.savePageAsync(mhtmlLocalPath, 'MHTML')
+					.then(() => {
+						return fsClient
+						.putFileAsync(mhtmlLocalPath, mhtmlRemotePath);
+					})
+				})
+				.then(() => {
+					winston.info('successfully uploaded the mhtml %s', mhtmlRemotePath)
+				})
+				.catch((err) => {
+					winston.error("We got an error trying to dump the mhtml and screenshot: %s %s", err.name, err.message);
+				})
+				.then(() => {
+						callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
+				});
 			} else {
 				callback(null, args.result);
 			}
