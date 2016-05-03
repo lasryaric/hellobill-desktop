@@ -323,6 +323,26 @@ function createWindow () {
 
     })
 
+    ipcMain.on('FetchCredentials', (ax, data) => {
+      if (!data || !data.forEach) {
+        winston.info("No connector to get credentials for");
+        return null;
+      }
+
+      const credentials = {};
+      data.forEach((connectorID) => {
+        const serializedCredentials = keytar.getPassword('hellobil_desktopapp', connectorID);
+        if (!serializedCredentials) {
+          winston.error("Did not find credentials for connector: %s", connectorID)
+          return ;
+        }
+        const credentialsObj = JSON.parse(serializedCredentials);
+        credentials[connectorID] = credentialsObj;
+      })
+
+      appWindow.webContents.send('CredentialsAvailable', credentials)
+    });
+
 
     ipcMain.on('OpenTargetFolder', (ax, destinationFolder) => {
       var done = false;

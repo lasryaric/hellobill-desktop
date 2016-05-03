@@ -27,7 +27,7 @@ class MyEmitter extends EventEmitter {}
 
 
 
-function mainRunner(bw, serviceName, destinationFolder, email, modelConnector) {
+function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector) {
 
 	var fsClient = knox.createClient({
 		key: process.env.AWS_KEY,
@@ -332,7 +332,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, modelConnector) {
 			}
 
 
-			const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"));
+			const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"), connectorUsername);
 			const fileHash = checksum(data);
 			const urlHash = checksum(bw.webContents.getURL());
 			var fileName = serviceName+"_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
@@ -549,7 +549,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, modelConnector) {
 					};
 
 					const dateStr = dateInstance.format("YYYY-MM");
-					const filePath = getBillDirectory(serviceName, dateStr);
+					const filePath = getBillDirectory(serviceName, dateStr, connectorUsername);
 
 					mkdirpAsync(filePath)
 					.then(() => {
@@ -670,8 +670,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, modelConnector) {
 		bw.canReceiveOrder = true;
 	}
 
-	function getBillDirectory(serviceName, dateStr) {
-		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
+	function getBillDirectory(serviceName, dateStr, username) {
+		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/"+username+"/";
 
 		return p;
 	}
