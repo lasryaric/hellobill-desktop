@@ -292,7 +292,10 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	}
 
-	this.waitForDownload = function(service, date, callback) {
+	this.waitForDownload = function(service, date, subAccount, callback) {
+		if (!callback) {
+			callback = subAccount;
+		}
 		const message = {
 			action: 'waitForDownload',
 			service: service,
@@ -300,7 +303,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		};
 
 		sendToBrowser(message);
-		onNextDownload(date, callback);
+		onNextDownload(date, subAccount, callback);
 
 
 	}
@@ -322,7 +325,10 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		isClosing = true;
 	}
 
-	this.savePageAsPDF = function(momentDate, callback) {
+	this.savePageAsPDF = function(momentDate, subAccount, callback) {
+		if (!callback) {
+			callback = subAccount;
+		}
 		bw.webContents.printToPDF({
 			printBackground: true
 		}, function(error, data) {
@@ -332,7 +338,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			}
 
 
-			const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"), connectorUsername);
+			const fileDirectory = getBillDirectory(serviceName, momentDate.format("YYYY-MM"), connectorUsername, subAccount);
 			const fileHash = checksum(data);
 			const urlHash = checksum(bw.webContents.getURL());
 			var fileName = serviceName+"_"+momentDate.format("YYYY-MM")+"_"+urlHash.substr(0, 6)+".pdf"; //getBillIncrementalFileName("uber_"+momentDate.format("YYYY-MM"), 'pdf', fileDirectory);
@@ -487,7 +493,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	}
 
-	function onNextDownload(dateInstance, cb) {
+	function onNextDownload(dateInstance, subAccount, cb) {
 		var downloadTimeout = null;
 
 		var callback = function() {
@@ -549,7 +555,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 					};
 
 					const dateStr = dateInstance.format("YYYY-MM");
-					const filePath = getBillDirectory(serviceName, dateStr, connectorUsername);
+					const filePath = getBillDirectory(serviceName, dateStr, connectorUsername, subAccount);
 
 					mkdirpAsync(filePath)
 					.then(() => {
@@ -670,8 +676,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		bw.canReceiveOrder = true;
 	}
 
-	function getBillDirectory(serviceName, dateStr, username) {
-		const p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/"+username+"/";
+	function getBillDirectory(serviceName, dateStr, username, subAccount) {
+		var p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/"+username+"/";
+		if (subAccount && subAccount.length > 0) {
+			p += subAccount+"/";
+		}
 
 		return p;
 	}
