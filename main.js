@@ -323,7 +323,7 @@ function createWindow () {
 
     })
 
-    ipcMain.on('FetchCredentials', (ax, data) => {
+    ipcMain.on('FetchCredentials', (sender, data) => {
       if (!data || !data.forEach) {
         winston.info("No connector to get credentials for");
         return null;
@@ -340,7 +340,7 @@ function createWindow () {
         credentials[connectorID] = credentialsObj;
       })
 
-      appWindow.webContents.send('CredentialsAvailable', credentials)
+      sender.sender.send('CredentialsAvailable', credentials)
     });
 
 

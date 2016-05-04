@@ -295,6 +295,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	this.waitForDownload = function(service, date, subAccount, callback) {
 		if (!callback) {
 			callback = subAccount;
+			subAccount = null;
 		}
 		const message = {
 			action: 'waitForDownload',
@@ -328,6 +329,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	this.savePageAsPDF = function(momentDate, subAccount, callback) {
 		if (!callback) {
 			callback = subAccount;
+			subAccount = null;
 		}
 		bw.webContents.printToPDF({
 			printBackground: true
