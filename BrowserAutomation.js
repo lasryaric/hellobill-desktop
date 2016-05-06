@@ -679,7 +679,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	function getBillDirectory(serviceName, dateStr, username, subAccount) {
-		var p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/"+username+"/";
+		var p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/";
 		if (subAccount && subAccount.length > 0) {
 			p += subAccount+"/";
 		}
