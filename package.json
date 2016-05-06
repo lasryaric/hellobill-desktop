@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "1.22.2",
+  "version": "1.22.2-video-floriane",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
