@@ -16,6 +16,7 @@ const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
 const AppConstants = require('./lib/constants/AppConstants');
+const nodeApp = require('app');
 
 var Menu = require("menu");
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
@@ -159,7 +160,7 @@ function createWindow () {
       winston.info("Got fetch my bills order!");
       const sessionStats = {};
       const connectorsList = data.map((connector) => { return connector.name }).join(', ');
-      Slack.sendMessage('Got fetchMyBill order for user '+mUserMe.email+' with the following connectors: ' + connectorsList);
+      Slack.sendMessage('Got fetchMyBill order for user '+mUserMe.email+' with the following connectors: ' + connectorsList+', start date: '+fetchParams.startDate+', platform: ' + os.platform());
       if (false === fs.existsSync(mUserMe.destinationFolder)) {
         electron.dialog.showMessageBox(null, {
           title: "Read this",
@@ -304,7 +305,7 @@ function createWindow () {
     ipcMain.on('userMe', function(ax, mUser) {
       winston.info('updating userMe: ', mUser);
       if (mUserMe === null && mUser && mUser.email) {
-        Slack.sendMessage('The following user just opened the app: '+ mUser.email);
+        Slack.sendMessage('The following user just opened the app: '+ mUser.email + ' - version ' + nodeApp.getVersion());
       }
       mUserMe = mUser;
       if (!mUserMe.destinationFolder) {
