@@ -31,8 +31,6 @@ if (process.env.NODE_ENV) {
   dotenv.load({ path: __dirname+'/.env.production' });
 }
 
-const supportedConnectors = ['uber', 'awsmain', 'github'];
-
 const FSClient = require('./lib/utils/FSClient')
 const Slack = require('./lib/utils/Slack');
 const StrFormat = require('./lib/utils/StrFormat');

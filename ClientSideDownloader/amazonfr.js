@@ -31,24 +31,16 @@ function _getLinks(date, filter) {
   return links;
 }
 
-function download(date, offset) {
+function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
 
   const okElements = _getLinks(date, "get-legal-invoice")
   if (offset >= okElements.length) {
-    window.__hellobill.ipc.send('doneDownloading');
+    done();
     return ;
   }
 
-
-
-
-
-  function downloadNextHandler() {
-    download(date, offset + 1);
-  }
-  window.__hellobill.ipc.once('downloadNext', downloadNextHandler);
   window.location = okElements[offset];
 }
 

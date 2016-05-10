@@ -157,14 +157,27 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 }
 
 function runnerDownload(serviceName, date, originalMessage) {
-	const downloader = window.__hb.downloaders[serviceName];
+	const downloader = window.__hb.downloaders(serviceName);
+	var downloadOffset = 1;
+
+	function doneDownloading() {
+		window.__hellobill.ipc.removeListener('downloadNext', downloadNextHandler);
+		window.__hellobill.ipc.send('doneDownloading');
+	}
+
+	function downloadNextHandler() {
+		downloader.download(date, downloadOffset, doneDownloading);
+		downloadOffset++;
+	}
+
+	window.__hellobill.ipc.on('downloadNext', downloadNextHandler);
 
 	remoteLog('runnerDownload with serviceName: '+ serviceName+' date:' + date)
-	downloader.download(date);
+	downloader.download(date, 0, doneDownloading, downloadNextHandler);
 }
 
 function executeClientSideFunction(serviceName, date, functionName, originalMessage, callback) {
-	const downloader = window.__hb.downloaders[serviceName];
+	const downloader = window.__hb.downloaders(serviceName);
 
 	remoteLog('functionName with serviceName: '+ serviceName+' date:' + date+' functioName:' + functionName);
 	downloader[functionName](date)

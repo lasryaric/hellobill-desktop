@@ -1,6 +1,6 @@
 'use strict';
 
-function download(date, offset) {
+function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
   const _ = window.__hellobill.utils._;
@@ -19,7 +19,7 @@ function download(date, offset) {
     return dateText.match(regStr)
   });
   if (offset >= okElements.length) {
-    window.__hellobill.ipc.send('doneDownloading');
+    done()
     return ;
   }
 
@@ -27,10 +27,6 @@ function download(date, offset) {
 
   const urlToDownload = a.href.replace('.html', '.pdf');
 
-  function downloadNextHandler() {
-    download(date, offset + 1);
-  }
-  window.__hellobill.ipc.once('downloadNext', downloadNextHandler);
   window.location = urlToDownload;
 }
 

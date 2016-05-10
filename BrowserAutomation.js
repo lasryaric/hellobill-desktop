@@ -62,10 +62,10 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	function setlastMessageUUID(value) {
 		if (value === null) {
-			console.log('clean lastMessageUUID, value about to be cleaned: ', lastMessageUUID)
+			winston.verbose('clean lastMessageUUID, value about to be cleaned: ', lastMessageUUID)
 
 		} else {
-			console.log('Setting lastMessageUUID, curent value, new value', lastMessageUUID, value)
+			winston.verbose('Setting lastMessageUUID, curent value, new value', lastMessageUUID, value)
 		}
 		// console.trace();
 		lastMessageUUID = value;

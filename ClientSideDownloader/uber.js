@@ -1,25 +1,18 @@
 'use strict';
 
-function download(date, offset) {
+function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
-
-  function downloadNextHandler() {
-    download(date, offset + 1);
-  }
-
-  window.__hellobill.ipc.once('downloadNext', downloadNextHandler);
 
   const okElements = document.querySelectorAll('#data-invoice-btn-download');
 
   if (offset >= okElements.length) {
-
-    window.__hellobill.ipc.send('doneDownloading');
+    done();
     return ;
   }
   if (okElements[offset].className.match('hidden')) {
 
-    window.__hellobill.ipc.send('doneDownloading');
+    done();
   } else {
 
     okElements[offset].click();
