@@ -104,6 +104,34 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		onNextActionCompleted(callback);
 	}
 
+	this.clickReal = function(cssSelector, callback) {
+		const message = {
+			action: 'getMiddlePosition',
+			cssSelector: cssSelector,
+		};
+		sendToBrowser(message);
+		onNextActionCompletedAsync().then((position) => {
+			const x = position.left + 10;
+			const y = position.top + 10;
+
+			bw.webContents.sendInputEvent({
+				type:'mouseDown',
+				x:x,
+				y:y,
+				button:'left',
+				clickCount: 1
+			})
+			bw.webContents.sendInputEvent({
+				type:'mouseUp',
+				x:x,
+				y:y,
+				button:'left',
+				clickCount: 1
+			})
+		})
+		.then(callback)
+	}
+
 	this.clickAll = function(cssSelector, callback) {
 		const message = {
 			action: 'clickAll',
@@ -457,6 +485,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			ipcMain.removeListener('doneExecuting', onNextActionCompletedHandler);
 		})
 	}
+
+	const onNextActionCompletedAsync = bluebird.promisify(onNextActionCompleted);
 
 
 
