@@ -77,20 +77,6 @@ function runnerGetInnerHTML(cssSelector, originalMessage, callback) {
 	callback(null, originalMessage, texts);
 }
 
-function runnerGetMiddlePosition(cssSelector, originalMessage, callback) {
-	const elem = document.querySelector(cssSelector);
-	if (!elem) {
-		callback(new Error("runnerGetMiddlePosition: dom element not found for css selector: "+ cssSelector), originalMessage, callback);
-		return ;
-	}
-	const rect = elem.getBoundingClientRect();
-	const result = {
-		left: rect.left,
-		top: rect.top,
-	};
-	whenDone(null, originalMessage, result);
-}
-
 function runnerGetAttribute(cssSelector, attribute, originalMessage, callback) {
 
 	var elems = document.querySelectorAll(cssSelector);
@@ -257,8 +243,6 @@ function __hellobillLoop() {
 		runnerDownload(message.service, message.date, message, whenDone);
 	} else if (message.action === 'clientSideFunction') {
 		executeClientSideFunction(message.service, message.date, message.functionName, message, whenDone)
-	} else if(message.action === 'getMiddlePosition') {
-		runnerGetMiddlePosition(message.cssSelector, message, whenDone)
 	} else {
 		console.log('got an unknown message:', message);
 	}
