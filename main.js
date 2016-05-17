@@ -117,7 +117,7 @@ function createWindow () {
         })
         .finally(() => {
           testingCredentials = false;
-          return cr.closeBrowserWindow();
+          return cr.closeBrowserWindow(modelConnectorJS);
         })
     })
 
@@ -218,14 +218,15 @@ function createWindow () {
       var counter = 0;
 
       return bluebird
-      .each(immutableConnectors, (modelConnector) => {
+      .map(immutableConnectors, (modelConnector) => {
+
+        const modelConnectorJS = modelConnector.toJS();
         const cr = new ConnectorsRunner();
         cr.on('fileDownloaded', fileDownloadedHandler);
 
           return bluebird
           .each(months, (monthStr) => {
           const thisMoment = moment(monthStr, "YYYY-MM");
-          const modelConnectorJS = modelConnector.toJS();
 
           appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+parseInt((counter/total * 100), 10)+'%)'});
           counter++;
@@ -269,10 +270,10 @@ function createWindow () {
         })
         .then(() => {
           cr.removeListener('fileDownloaded', fileDownloadedHandler);
-          return cr.closeBrowserWindow();
+          return cr.closeBrowserWindow(modelConnectorJS);
 
         })
-      })
+      }, {concurrency: 4})
       .catch((err) => {
         winston.error('We got an error in main: ', {err:err.message, errName: err.name})
       })

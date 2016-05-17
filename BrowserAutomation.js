@@ -24,6 +24,13 @@ const messageName = 'invokeAction';
 
 class MyEmitter extends EventEmitter {}
 
+//forwarding event from main IPC channel to webContents instances
+['doneExecuting', 'doneDownloading'].each((eventName) => {
+	ipcMain.on(eventName, function(event, a, b, c) {
+			const webContents = event.sender;
+			webContents.emit(eventName, event, a, b, c);
+	});
+})
 
 
 
@@ -451,10 +458,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 
 		}
-		ipcMain.once('doneExecuting', onNextActionCompletedHandler);
+
+		bw.webContents.once('doneExecuting', onNextActionCompletedHandler);
 
 		scheduleErrorTimeout(() => {
-			ipcMain.removeListener('doneExecuting', onNextActionCompletedHandler);
+			wb.webContents.removeListener('doneExecuting', onNextActionCompletedHandler);
 		})
 	}
 
@@ -635,11 +643,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		safeBrowserWindowSync((bw) => {
 			bw.webContents.session.on('will-download', willDownloadHandler);
 		});
-		ipcMain.once('doneDownloading', doneDownloadingHandler);
+		bw.webContents.once('doneDownloading', doneDownloadingHandler);
 
 		function _onErrorCleanUp(err) {
 			winston.info('Cleaning up the onNextDownload cycle because we got the following error:', {err: err});
-			ipcMain.removeListener('doneDownloading', doneDownloadingHandler);
+			bw.webContents.removeListener('doneDownloading', doneDownloadingHandler);
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.removeListener('will-download', willDownloadHandler);
 			})
