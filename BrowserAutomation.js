@@ -25,7 +25,7 @@ const messageName = 'invokeAction';
 class MyEmitter extends EventEmitter {}
 
 //forwarding event from main IPC channel to webContents instances
-['doneExecuting', 'doneDownloading'].each((eventName) => {
+['doneExecuting', 'doneDownloading'].forEach((eventName) => {
 	ipcMain.on(eventName, function(event, a, b, c) {
 			const webContents = event.sender;
 			webContents.emit(eventName, event, a, b, c);
