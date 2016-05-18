@@ -39,9 +39,9 @@ const appAutoUpdater = require('./lib/AppAutoUpdater')
 
 winston.info('Loaded env:'+ process.env.LOADED_FILE);
 if (process.env.LOADED_FILE !== 'production') {
-  require('trace'); // active long stack trace
-  require('clarify'); // Exclude node internal calls from the stack
-  Error.stackTraceLimit = Infinity;
+  // require('trace'); // active long stack trace
+  // require('clarify'); // Exclude node internal calls from the stack
+  // Error.stackTraceLimit = Infinity;
 }
 
 // Module to control application life.
