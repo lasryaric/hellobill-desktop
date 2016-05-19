@@ -273,7 +273,7 @@ function createWindow () {
           return cr.closeBrowserWindow(modelConnectorJS);
 
         })
-      }, {concurrency: 4})
+      }, {concurrency: 3})
       .catch((err) => {
         winston.error('We got an error in main: ', {err:err.message, errName: err.name})
       })
