@@ -149,6 +149,7 @@ function createWindow () {
 
         return ;
       }
+      fetchParams.list = _.sortBy(fetchParams.list, (o) => { return o.name });
       var data = fetchParams.list.filter((connector) => {
         return true; // (supportedConnectors.indexOf(connector.name) > -1);
       });
