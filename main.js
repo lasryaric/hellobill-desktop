@@ -79,9 +79,10 @@ function createWindow () {
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 
-  appWindow = new BrowserWindow({width: 1200, height: 600, nodeIntegration: true, show:true,
-    "web-preferences": {
-      "web-security": false
+  appWindow = new BrowserWindow({width: 1200, height: 600, show:true,
+    "webPreferences": {
+      nodeIntegration: true,
+      "webSecurity": false
     }});
 
 
@@ -373,6 +374,13 @@ function createWindow () {
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.on('ready', createWindow);
+
+  app.on('ready', () => {
+    console.log('ready 2');
+
+    var protocol = electron.protocol;
+    protocol.setAsDefaultProtocolClient('hellobill')
+  });
 
 
   // Quit when all windows are closed.
