@@ -16,9 +16,10 @@ const os = require('os');
 const fs = require('fs');
 const dotenv = require('dotenv');
 const AppConstants = require('./lib/constants/AppConstants');
-const nodeApp = require('app');
+const nodeApp = electron.app;
+const urlParser = require('url');
 
-var Menu = require("menu");
+var Menu = electron.Menu;
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 
@@ -376,11 +377,20 @@ function createWindow () {
   app.on('ready', createWindow);
 
   app.on('ready', () => {
-    console.log('ready 2');
+    const protocolName = 'hellobill';
+    nodeApp.setAsDefaultProtocolClient(protocolName)
+    app.on('open-url', (event, string) => {
 
-    var protocol = electron.protocol;
-    protocol.setAsDefaultProtocolClient('hellobill')
-  });
+        var parsedURL = urlParser.parse(string, true);
+        const token = parsedURL.query.token;
+        const escapedToken = encodeURIComponent(token);
+        const nextURL = process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/account';
+        const escapedNextURL = encodeURIComponent(nextURL);
+        const url = process.env.WEBAPP_STARTING_POINT + "/api/user/regeneratesession?sessionID="+escapedToken+"&nextURL="+escapedNextURL;
+
+        appWindow.loadURL(url);
+    })
+  })
 
 
   // Quit when all windows are closed.
