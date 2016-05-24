@@ -1,5 +1,13 @@
 'use strict';
 
+const dotenv = require('dotenv');
+if (process.env.NODE_ENV) {
+  dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
+} else {
+  dotenv.load({ path: __dirname+'/.env.production' });
+}
+console.log('Loaded env:'+ process.env.LOADED_FILE);
+
 const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
@@ -14,8 +22,6 @@ const keytar = require('keytar');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
-const dotenv = require('dotenv');
-const AppConstants = require('./lib/constants/AppConstants');
 const nodeApp = electron.app;
 const urlParser = require('url');
 
@@ -26,24 +32,12 @@ var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 // winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
 
 
-if (process.env.NODE_ENV) {
-  dotenv.load({ path: __dirname+'/.env.'+process.env.NODE_ENV });
-} else {
-  dotenv.load({ path: __dirname+'/.env.production' });
-}
-
+const AppConstants = require('./lib/constants/AppConstants');
 const FSClient = require('./lib/utils/FSClient')
 const Slack = require('./lib/utils/Slack');
 const StrFormat = require('./lib/utils/StrFormat');
 const appAutoUpdater = require('./lib/AppAutoUpdater')
 
-
-winston.info('Loaded env:'+ process.env.LOADED_FILE);
-if (process.env.LOADED_FILE !== 'production') {
-  // require('trace'); // active long stack trace
-  // require('clarify'); // Exclude node internal calls from the stack
-  // Error.stackTraceLimit = Infinity;
-}
 
 // Module to control application life.
 const app = electron.app;
@@ -85,7 +79,6 @@ function createWindow () {
       nodeIntegration: true,
       "webSecurity": false
     }});
-
 
     appWindow.loadURL(process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/autoupdater');
 
