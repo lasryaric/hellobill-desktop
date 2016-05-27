@@ -301,6 +301,7 @@ function createWindow () {
       winston.info('updating userMe: ', mUser);
       if (mUserMe === null && mUser && mUser.email) {
         Slack.sendMessage('The following user just opened the app: '+ mUser.email + ', version ' + nodeApp.getVersion() + ', platform: ' + os.platform());
+        IntercomTrackIpc('inapp_opened', {version: nodeApp.getVersion(), platform: os.platform()})
       }
       mUserMe = mUser;
       if (!mUserMe.destinationFolder) {
@@ -373,7 +374,8 @@ function createWindow () {
     const protocolName = 'hellobill';
     nodeApp.setAsDefaultProtocolClient(protocolName)
     app.on('open-url', (event, string) => {
-
+      event.preventDefault();
+        app.focus();
         var parsedURL = urlParser.parse(string, true);
         const token = parsedURL.query.token;
         const escapedToken = encodeURIComponent(token);
