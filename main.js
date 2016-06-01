@@ -372,10 +372,11 @@ function createWindow () {
 
   app.on('ready', () => {
     const protocolName = 'hellobill';
-    nodeApp.setAsDefaultProtocolClient(protocolName)
+    nodeApp.removeAsDefaultProtocolClient(protocolName);
+    nodeApp.setAsDefaultProtocolClient(protocolName);
+    console.log('isDefaultProtocolClient?', nodeApp.isDefaultProtocolClient(protocolName))
     app.on('open-url', (event, string) => {
-      event.preventDefault();
-        app.focus();
+        event.preventDefault();
         var parsedURL = urlParser.parse(string, true);
         const token = parsedURL.query.token;
         const escapedToken = encodeURIComponent(token);
@@ -384,6 +385,17 @@ function createWindow () {
         const url = process.env.WEBAPP_STARTING_POINT + "/api/user/regeneratesession?sessionID="+escapedToken+"&nextURL="+escapedNextURL;
 
         appWindow.loadURL(url);
+        setTimeout(() => {
+          if (app) {
+            electron.dialog.showMessageBox(null, {
+              title: "You are logged-in",
+              message: 'You are now logged-in on Hellobill desktop app.',
+              type: "info",
+              buttons:['Thanks'],
+            })
+          }
+        }, 1000)
+
     })
   })
 
