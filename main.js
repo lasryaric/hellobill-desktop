@@ -451,6 +451,9 @@ function createWindow () {
       secret_access_key: process.env.AWS_SECRET,
       name_format: email+'/%Y-%m-%d-%H-%M-%S-%L.log',
     });
+    s3_stream.on('error', (error) => {
+      console.log('S3 stream error:', error);
+    })
 
     winston.add(winston.transports.File, {
       stream: s3_stream,
