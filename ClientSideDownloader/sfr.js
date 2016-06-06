@@ -6,11 +6,11 @@ function download(date, offset, done, next) {
   const _ = window.__hellobill.utils._;
   const moment = window.__hellobill.utils.moment;
 
-  const regStr = moment(date, "YYYY-MM").format("MMM [.*], YYYY");
+  const regStr = moment(date, "YYYY-MM").locale('fr').format("[.*]MMMM[.*]YYYY");
 
-  const allElements = document.querySelectorAll(".billing-table tbody.data-body tr");
+  const allElements = document.querySelectorAll("tr.tuple");
   const okElements = _.filter(allElements, function(elem) {
-    const dateText = elem.querySelector('td span').textContent;
+    const dateText = elem.querySelector('td.date').textContent;
     if (dateText === null) {
       return false;
     }
@@ -22,7 +22,7 @@ function download(date, offset, done, next) {
     return ;
   }
 
-  var a = okElements[offset].querySelector('a[href*="/order/bill.pdf"]');
+  var a = okElements[offset].querySelector('a[href*="facture"]')
 
   if (a) {
     a.click();
