@@ -4,7 +4,8 @@
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
-    "start": "NODE_ENV=development electron main.js"
+    "start": "NODE_ENV=development electron main.js",
+    "start:prod": "NODE_ENV=production electron main.js"
   },
   "repository": {
     "type": "git",
