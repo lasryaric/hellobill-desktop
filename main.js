@@ -148,7 +148,9 @@ function createWindow () {
       var data = fetchParams.list.filter((connector) => {
         return true; // (supportedConnectors.indexOf(connector.name) > -1);
       });
-      winston.info("Lets go with the following date %s", fetchParams.startDate);
+      winston.info("Lets go with the following date %s", fetchParams.startDate, data.map((o) => {
+        return o.name;
+      }));
 
       _fetchMyBillsLock = true;
       winston.info("Got fetch my bills order!");
