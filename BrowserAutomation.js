@@ -32,6 +32,9 @@ class MyEmitter extends EventEmitter {}
 	});
 })
 
+var lastMessageUUID = null;
+var lastMessageData = null;
+var messageUUIDCounter = 1;
 
 
 function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector) {
@@ -44,9 +47,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	bluebird.promisifyAll(fsClient);
 	bluebird.promisifyAll(bw);
 	bluebird.promisifyAll(bw.webContents);
-	var lastMessageUUID = null;
-	var lastMessageData = null;
-	var messageUUIDCounter = 1;
+	// var lastMessageUUID = null;
+	// var lastMessageData = null;
+	// var messageUUIDCounter = 1;
 
 	//catpurePage does not respect the first callback arg error standard
 	function capturePageAsync() {

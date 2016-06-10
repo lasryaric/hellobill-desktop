@@ -207,9 +207,6 @@ function createWindow () {
           }
           winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
         })
-
-
-
       }
 
       var total = immutableConnectors.size * months.length;
