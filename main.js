@@ -397,7 +397,7 @@ function createWindow () {
             // })
             appWindow.focus();
           }
-        }, 1000)
+        }, 100)
 
     })
   })
