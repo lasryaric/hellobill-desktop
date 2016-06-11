@@ -1,6 +1,7 @@
 'use strict';
 
-function _getLinks(date) {
+function _getLinks(data) {
+  var date = data.date;
   const moment = window.__hellobill.utils.moment;
   const dateStr = moment(date, "YYYY-MM").format("YYYY-MM");
 
@@ -28,7 +29,8 @@ function _getLinks(date) {
   return links;
 }
 
-function getInvoicesURLS(date) {
+function getInvoicesURLS(data) {
+  var date = data.date;
 
   return new Promise((yes) => {
 

@@ -131,7 +131,7 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 
 		var elementExists = null;
 		var foundAny = false;
-
+		//debugger;
 		if (typeof(csss) !== "string") {
 			const results = {};
 			window.__hb._.forEach(csss, (v, k) => {
@@ -155,7 +155,7 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 			callback(null, originalMessage, elementExists);
 
 			return ;
-		} else if (called < 20) {
+		} else if (called < 40) {
 
 			remoteLog('runnerWaitForCss: Did not find ' + cssStringified+', called: '+called+'/10');
 			setTimeout(checkit, 500);
@@ -173,6 +173,7 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 }
 
 function runnerDownload(serviceName, date, originalMessage) {
+	//debugger;
 	const downloader = window.__hb.downloaders(serviceName);
 	var downloadOffset = 1;
 
@@ -192,11 +193,11 @@ function runnerDownload(serviceName, date, originalMessage) {
 	downloader.download(date, 0, doneDownloading, downloadNextHandler);
 }
 
-function executeClientSideFunction(serviceName, date, functionName, originalMessage, callback) {
+function executeClientSideFunction(serviceName, data, functionName, originalMessage, callback) {
 	const downloader = window.__hb.downloaders(serviceName);
 
-	remoteLog('functionName with serviceName: '+ serviceName+' date:' + date+' functioName:' + functionName);
-	downloader[functionName](date)
+	remoteLog('functionName with serviceName: '+ serviceName+' data:' + data+' functioName:' + functionName);
+	downloader[functionName](data)
 	.then((result) => {
 		callback(null, originalMessage, result);
 	})
@@ -258,7 +259,7 @@ function __hellobillLoop() {
 	} else if (message.action === 'waitForDownload') {
 		runnerDownload(message.service, message.date, message, whenDone);
 	} else if (message.action === 'clientSideFunction') {
-		executeClientSideFunction(message.service, message.date, message.functionName, message, whenDone)
+		executeClientSideFunction(message.service, message.data, message.functionName, message, whenDone)
 	} else if(message.action === 'getMiddlePosition') {
 		runnerGetMiddlePosition(message.cssSelector, message, whenDone)
 	} else {
