@@ -1,12 +1,13 @@
-'use strict';
+ 'use strict';
 
 
-function getInvoicesURLS(date) {
+function getInvoicesURLS(data) {
+  var date = data.date;
 
   return new Promise((yes, no) => {
 
     const moment = window.__hellobill.utils.moment;
-    const dateRegStr = moment(date, "YYYY-MM").format("MMMM [.*,] YYYY");
+    const dateRegStr = moment(date, "YYYY-MM").format("MMM DD");
     const orders = document.querySelectorAll('.a-box-group.a-spacing-base.order');
     const okOrders = window.__hb._.filter(orders, (order) => {
       const dateDomElement = order.querySelector('.a-color-secondary.value');

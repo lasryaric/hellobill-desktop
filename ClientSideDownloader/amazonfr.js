@@ -1,6 +1,7 @@
 'use strict';
 
-function _getLinks(date, filter) {
+function _getLinks(data, filter) {
+  var date = data.date;
   const moment = window.__hellobill.utils.moment;
   const dateRegStr = moment(date, "YYYY-MM").locale('fr').format("MMMM[.*]YYYY");
 
@@ -31,9 +32,10 @@ function _getLinks(date, filter) {
   return links;
 }
 
-function download(date, offset, done) {
+function download(data, offset, done) {
   //date: 2016-01
   offset = offset || 0;
+  var date = data.date;
 
   const okElements = _getLinks(date, "get-legal-invoice")
   if (offset >= okElements.length) {
@@ -44,7 +46,8 @@ function download(date, offset, done) {
   window.location = okElements[offset];
 }
 
-function getInvoicesURLS(date) {
+function getInvoicesURLS(data) {
+  var date = data.date;
 
   return new Promise((yes) => {
 
