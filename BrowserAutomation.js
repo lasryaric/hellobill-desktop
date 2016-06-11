@@ -118,8 +118,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		};
 		sendToBrowser(message);
 		onNextActionCompletedAsync().then((position) => {
-			const x = position.left + 10;
-			const y = position.top + 10;
+			const x = parseInt(position.left + 10, 10);
+			const y = parseInt(position.top + 10, 10);
 
 			bw.webContents.sendInputEvent({
 				type:'mouseDown',
@@ -344,11 +344,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	}
 
-	this.clientSideFunction = function(service, date, functionName, callback) {
+	this.clientSideFunction = function(service, data, functionName, callback) {
 		const message = {
 			action: 'clientSideFunction',
 			service: service,
-			date: date.format("YYYY-MM"),
+			data: data,
 			functionName: functionName,
 		};
 
@@ -552,13 +552,13 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		scheduleErrorTimeout(() => {
 			_onErrorCleanUp(new Error("We never heard back from the downloader"));
 		});
-		function willDownloadHandler(event, item) {
+		function willDownloadHandler(event, item, currentWebContents) {
 			clearErrorTimeout();
 			const remoteFileName = item.getFilename();
 
 			willDownloadMemory  = willDownloadMemory.add(remoteFileName);
 			event.preventDefault();
-			console.log('will download!');
+			console.log('will download!', item.getURL());
 
 
 			var url = require('url')
@@ -566,7 +566,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			var fileURL = url.parse(item.getURL());
 			var headers = {
 				"Cookie": null,
-				"user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"
+				"user-agent": currentWebContents.getUserAgent(),
 			}
 			safeBrowserWindowSync((bw) => {
 				bw.webContents.session.cookies.get({}, function(err, cookies) {
