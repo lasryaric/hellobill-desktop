@@ -8,7 +8,7 @@ function download(date, offset, done, next) {
 
   const regStr = moment(date, "YYYY-MM").locale('fr').format('L');
 
-  const allElements = document.querySelectorAll("'.factures tbody tr'");
+  const allElements = document.querySelectorAll('.factures tbody tr');
   const okElements = _.filter(allElements, function(elem) {
     const dateText = elem.querySelector('td a[href*="getFacturePDF"]').textContent;
     if (dateText === null) {
