@@ -53,6 +53,7 @@
     "react-select": "^0.9.1",
     "request": "^2.69.0",
     "requestretry": "^1.6.0",
+    "resemblejs": "^2.2.1",
     "s3-streamlogger": "^0.3.0",
     "tough-cookie": "^2.2.1",
     "trace": "^2.3.0",
