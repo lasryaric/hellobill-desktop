@@ -606,6 +606,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 						winston.info('lets go download : %s', fileURL.href)
 						request(requestOptions)
+						// .on('data', (data) => {
+						// 	console.log(data)
+						// })
 						.on('error', function(err) {
 							_onErrorCleanUp(err);
 							const customError = new errors.ConnectorErrorDownload(err.message);
