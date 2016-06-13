@@ -148,7 +148,9 @@ function createWindow () {
       var data = fetchParams.list.filter((connector) => {
         return true; // (supportedConnectors.indexOf(connector.name) > -1);
       });
-      winston.info("Lets go with the following date %s", fetchParams.startDate);
+      winston.info("Lets go with the following date %s", fetchParams.startDate, data.map((o) => {
+        return o.name;
+      }));
 
       _fetchMyBillsLock = true;
       winston.info("Got fetch my bills order!");
@@ -205,9 +207,6 @@ function createWindow () {
           }
           winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
         })
-
-
-
       }
 
       var total = immutableConnectors.size * months.length;
@@ -387,14 +386,15 @@ function createWindow () {
         appWindow.loadURL(url);
         setTimeout(() => {
           if (app) {
-            electron.dialog.showMessageBox(null, {
-              title: "You are logged-in",
-              message: 'You are now logged-in on Hellobill desktop app.',
-              type: "info",
-              buttons:['Thanks'],
-            })
+            // electron.dialog.showMessageBox(null, {
+            //   title: "You are logged-in",
+            //   message: 'You are now logged-in on Hellobill desktop app.',
+            //   type: "info",
+            //   buttons:['Thanks'],
+            // })
+            appWindow.focus();
           }
-        }, 1000)
+        }, 100)
 
     })
   })

@@ -12,11 +12,13 @@ function runnerClick(cssSelector, originalMessage, callback) {
 		return ;
 	}
 
-	domElemement[0].click();
-
 	console.log('runnerClick:clicked! ', cssSelector)
 	// callback(null, originalMessage);
 	callback(null, originalMessage, null);
+
+	setTimeout(() => {
+		domElemement[0].click();
+	}, 200)
 }
 
 function runnerClickAll(cssSelector, originalMessage, callback) {
