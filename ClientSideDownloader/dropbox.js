@@ -41,11 +41,9 @@ function _getLinks(data) {
 
 function getInvoicesURLS(data) {
 
-  var date = data.date;
-
   return new Promise((yes) => {
 
-    const links = _getLinks(date);
+    const links = _getLinks(data);
 
     yes(links);
   })

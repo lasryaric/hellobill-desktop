@@ -123,9 +123,12 @@ function runnerElementExists(cssSelector, originalMessage, callback) {
 	});
 }
 
-function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
+function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback) {
 	var called = 0;
 	const cssStringified = JSON.stringify(csss)
+	const retryMs = 500;
+	const retryMax = parseInt(timeout / retryMs);
+
 
 	function checkit() {
 
@@ -155,10 +158,10 @@ function runnerWaitForCssMulti(csss, silent, originalMessage, callback) {
 			callback(null, originalMessage, elementExists);
 
 			return ;
-		} else if (called < 40) {
+		} else if (called < retryMax) {
 
-			remoteLog('runnerWaitForCss: Did not find ' + cssStringified+', called: '+called+'/10');
-			setTimeout(checkit, 500);
+			remoteLog('runnerWaitForCss: Did not find ' + cssStringified+', called: '+called+'/'+retryMax);
+			setTimeout(checkit, retryMs);
 			called++;
 		} else if (silent === false) {
 			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssStringified), originalMessage);
@@ -253,7 +256,7 @@ function __hellobillLoop() {
 	} else if (message.action === 'elementExists') {
 		runnerElementExists(message.cssSelector, message, whenDone)
 	}  else if (message.action ==='waitForCss') {
-		runnerWaitForCssMulti(message.cssSelector, message.silent, message, whenDone)
+		runnerWaitForCssMulti(message.cssSelector, message.silent, message.timeoutMS, message, whenDone)
 	} else if (message.action === 'getAttribute') {
 		runnerGetAttribute(message.cssSelector, message.attribute, message, whenDone);
 	} else if (message.action === 'waitForDownload') {

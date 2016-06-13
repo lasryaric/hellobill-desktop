@@ -281,8 +281,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 
 
-	this.waitForCss = function(cssSelector, silent, callback) {
-		winston.info('calling super waitForCss with selector: ', cssSelector)
+	this.waitForCss = function(cssSelector, silent, timeoutMS, callback) {
+		callback = arguments[arguments.length - 1];
+		silent = arguments.length > 2 ? silent : false;
+		timeoutMS = arguments.length > 3 ? timeoutMS : 10000; //10 seconds
+		console.log('waitForCss args(cssSelector, silent, timeoutMS)', cssSelector, silent, timeoutMS)
 
 		if (!callback) {
 			callback = silent;
@@ -297,6 +300,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				action: 'waitForCss',
 				cssSelector: cssSelector,
 				silent: silent,
+				timeoutMS: timeoutMS,
 			}
 
 			console.log('setting up the callback');
@@ -328,6 +332,43 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		onNextActionCompleted(safeCallback);
 		_waitForCss(cssSelector, silent)
 
+	}
+
+	this.validateLogin = function(cssValidLogin, cssNeedHelp, callback) {
+		cssNeedHelp = cssNeedHelp || {};
+		const mergedCss = _.merge({}, cssValidLogin, cssNeedHelp);
+		var foundLoginCss = false;
+		var foundNeedHelpCss = false;
+
+		return self
+		.waitForCssAsync(mergedCss, true)
+		.then((ex) => {
+			_.each(mergedCss, (v, k) => {
+				if (ex.ex[k]) {
+					if (cssValidLogin[k]) {
+						console.log('found valid creds css:', k, cssValidLogin);
+						foundLoginCss = true;
+					}
+					if (cssNeedHelp[k]) {
+						console.log('found two step css:', k, cssNeedHelp);
+						foundNeedHelpCss = true;
+					}
+				}
+			})
+			if (foundLoginCss) {
+				callback(null, ex);
+			} else {
+				winston.log('now showing the browser on %s', bw.getURL());
+				bw.show();
+				const humanTimeout = 1000 * 60 * 3; // 3 mintes timeout
+				return self.waitForCssAsync(cssValidLogin, false, humanTimeout)
+			}
+		})
+		.then((ex) => {
+			bw.hide();
+			callback(null, ex);
+		})
+		.catch(callback)
 	}
 
 	this.waitForDownload = function(service, date, subAccount, callback) {
