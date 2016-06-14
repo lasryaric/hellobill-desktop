@@ -62,8 +62,9 @@ function runnerTypeText(cssSelector, text, originalMessage, callback) {
 
 function runnerGoto(url, originalMessage, callback) {
 
-		window.location = url;
-
+setTimeout(() => {
+	window.location = url;
+}, 400);
 
 	callback(null, originalMessage);
 }

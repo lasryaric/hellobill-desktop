@@ -26,12 +26,30 @@ const messageName = 'invokeAction';
 class MyEmitter extends EventEmitter {}
 
 //forwarding event from main IPC channel to webContents instances
-['doneExecuting', 'doneDownloading'].forEach((eventName) => {
+['doneDownloading'].forEach((eventName) => {
 	ipcMain.on(eventName, function(event, a, b, c) {
 			const webContents = event.sender;
 			webContents.emit(eventName, event, a, b, c);
 	});
 })
+
+ipcMain.on('doneExecuting', function(event, a, b, c) {
+		const uuid = a.originalMessageUUID;
+		const webContents = event.sender;
+		if (uuid != lastMessageUUID) {
+			winston.info('********************** Skipping message uuid %s because we already processed it', uuid);
+			return ;
+		}
+		const nbListeners = webContents.listenerCount('doneExecuting');
+		if (nbListeners !== 1) {
+			console.log('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
+			if (process.env.LOADED_FILE !== 'production') {
+				throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
+			}
+		}
+
+		webContents.emit('doneExecuting', event, a, b, c);
+});
 
 var lastMessageUUID = null;
 var lastMessageData = null;
@@ -588,6 +606,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		winston.info('Asked to listen on url %s', url)
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
+			bw.webContents.once('doneExecuting', () => {
+				console.log('goto() catching doneExecuting event, but doing nothing with it')
+			})
 
 			bw.webContents.once('runloop-ready', didLoadFinishHandler);
 			winston.info('now listening on url %s', url)
