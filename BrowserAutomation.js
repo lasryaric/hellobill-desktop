@@ -1,6 +1,7 @@
 'use strict';
 
 
+const electron = require('electron');
 const ipcMain = require('electron').ipcMain;
 const immutable = require('immutable');
 const bluebird = require('bluebird');
@@ -37,7 +38,7 @@ var lastMessageData = null;
 var messageUUIDCounter = 1;
 
 
-function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector) {
+function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector, twoSSPopupMessage) {
 
 	var fsClient = knox.createClient({
 		key: process.env.AWS_KEY,
@@ -359,14 +360,34 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				callback(null, ex);
 			} else {
 				winston.log('now showing the browser on %s', bw.getURL());
+				if (twoSSPopupMessage) {
+					electron.dialog.showMessageBox(null, {
+	          title: "Read this",
+	          message: 'We need you to complete the authentication process on the '+serviceName+' website in order to fetch your bills',
+	          type: "info",
+	          buttons:['Bring on the '+serviceName+' website'],
+	        })
+				}
 				bw.show();
 				const humanTimeout = 1000 * 60 * 3; // 3 mintes timeout
 				return self.waitForCssAsync(cssValidLogin, false, humanTimeout)
 			}
 		})
 		.then((ex) => {
-			bw.hide();
-			callback(null, ex);
+			if (true === ex.elementExists) {
+				if (twoSSPopupMessage) {
+					electron.dialog.showMessageBox(null, {
+						title: "Read this",
+						message: 'Authentication completed. Thanks.',
+						type: "info",
+						buttons:['Ok'],
+					})
+				}
+				bw.hide();
+				callback(null, ex);
+			} else {
+				throw new errors.ConnectorErrorCouldNotExecute('Error while authenticating using the two factor authentication mechanism');
+			}
 		})
 		.catch(callback)
 	}
