@@ -16,13 +16,16 @@ function check(data) {
   const date = data.date;
   return new Promise((yes, no) => {
     const moment = window.__hellobill.utils.moment;
-    const dateText = document.querySelector('div.receipt-panel-body-padding div[data-reactid*="Charged"].row.space-3').textContent;
-    const regStr = moment(date, "YYYY-MM").format("MMMM[.*]YYYY");
+    const Texts = document.querySelector('div.receipt-panel-body-padding div.row.space-3 small')
     var result = null;
-    if (!!dateText.match(regStr)) {
-      const check = document.querySelector('.panel-body a[href*="vat_invoices"]');
-      if (check) {
-        result = check.href;
+    if (Texts) {
+      const dateText = Texts.textContent;
+      const regStr = moment(date, "YYYY-MM").format("MMMM[.*]YYYY");
+      if (!!dateText.match(regStr)) {
+        const check = document.querySelector('.panel-body a[href*="vat_invoices"]');
+        if (check) {
+          result = check.href;
+        }
       }
     }
     yes(result);
