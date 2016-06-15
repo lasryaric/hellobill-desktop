@@ -44,7 +44,7 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		if (nbListeners !== 1) {
 			console.log('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
 			if (process.env.LOADED_FILE !== 'production') {
-				throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
+				// throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
 			}
 		}
 
@@ -396,7 +396,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				if (twoSSPopupMessage) {
 					electron.dialog.showMessageBox(null, {
 						title: "Read this",
-						message: 'Authentication completed. Thanks.',
+						message: 'Thanks.',
 						type: "info",
 						buttons:['Ok'],
 					})

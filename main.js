@@ -182,7 +182,7 @@ function createWindow () {
       }
       months.push(startDate.format(dateFormat));
       startDate.add('1', 'months');
-      months = months.reverse();
+      // months = months.reverse();
       //months = ['2015-11'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});

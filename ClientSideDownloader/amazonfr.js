@@ -1,7 +1,6 @@
 'use strict';
 
-function _getLinks(data, filter) {
-  var date = data.date;
+function _getLinks(date, filter) {
   const moment = window.__hellobill.utils.moment;
   const dateRegStr = moment(date, "YYYY-MM").locale('fr').format("MMMM[.*]YYYY");
 

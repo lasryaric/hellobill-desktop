@@ -1,7 +1,6 @@
 'use strict';
 
-function _getLinks(data) {
-  var date = data.date;
+function _getLinks(date) {
   const moment = window.__hellobill.utils.moment;
   const dateStr = moment(date, "YYYY-MM").format("YYYY-MM");
 
