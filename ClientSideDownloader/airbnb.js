@@ -16,17 +16,43 @@ function check(data) {
   const date = data.date;
   return new Promise((yes, no) => {
     const moment = window.__hellobill.utils.moment;
-    const Texts = document.querySelector('div.receipt-panel-body-padding div.row.space-3 small')
-    var result = null;
+    const Texts = document.querySelector('div.receipt-panel-body-padding div.row.space-3 small');
+    var result = false;
     if (Texts) {
       const dateText = Texts.textContent;
-      const regStr = moment(date, "YYYY-MM").format("MMMM[.*]YYYY");
+      const regStr = moment(date, "YYYY-MM").locale('fr').format("MMMM[.*]YYYY");
       if (!!dateText.match(regStr)) {
-        const check = document.querySelector('.panel-body a[href*="vat_invoices"]');
-        if (check) {
-          result = check.href;
-        }
+        result = true;
       }
+      // if (!!dateText.match(regStr)) {
+      //   const check = document.querySelector('.panel-body a[href*="vat_invoices"]');
+      //   if (check) {
+      //     result = check.href;
+      //   }
+      // }
+    }
+    yes(result);
+  })
+}
+
+function checkfr(data) {
+  //date: 2016-01
+  const date = data.date;
+  return new Promise((yes, no) => {
+    const _ = window.__hellobill.utils._;
+    const moment = window.__hellobill.utils.moment;
+    const regStr = moment(date, "YYYY-MM").locale('fr').format("MMMM[.*]YYYY");
+    const elements = document.querySelectorAll('th.receipt-label');
+    const okElements = _.filter(elements, (elem) => {
+      const dateText = elem.textContent;
+      if (dateText === null) {
+        return false;
+      }
+      return dateText.match(regStr)
+    });
+    var result = null;
+    if (okElements.length > 0) {
+      var result = document.querySelector('a[href*="receipt?code"]#print')
     }
     yes(result);
   })
@@ -48,6 +74,7 @@ function download(data, offset, done) {
 
 module.exports = {
   check: check,
+  checkfr: checkfr,
   download: download,
   show: show,
 }
