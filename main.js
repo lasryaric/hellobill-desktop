@@ -458,8 +458,20 @@ function createWindow () {
 
     winston.add(winston.transports.File, {
       stream: s3_stream,
-      json: false
+      json: false,
     })
+    winston.rewriters.push(function(level, msg, metaOriginal) {
+      const meta = _.cloneDeep(metaOriginal);
+      const actionType = meta && meta.data && meta.data.action;
+      const valueToHide = meta && meta.data && meta.data.text;
+      if (actionType === 'typeText' && valueToHide) {
+        console.log('Logs filtering:', actionType, valueToHide)
+        meta.data.text = '****';
+      }
+
+      return meta;
+    })
+
   });
 
 
