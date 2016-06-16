@@ -15,9 +15,8 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const knox = require('knox');
-const moment = require('moment');
-const os = require('os');
+const screenCapture = require('./lib/screenCapture').screenCapture;
+
 
 
 bluebird.promisifyAll(checksum);
@@ -42,7 +41,7 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		}
 		const nbListeners = webContents.listenerCount('doneExecuting');
 		if (nbListeners !== 1) {
-			console.log('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
+			winston.error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
 			if (process.env.LOADED_FILE !== 'production') {
 				// throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
 			}
@@ -58,26 +57,11 @@ var messageUUIDCounter = 1;
 
 function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector, twoSSPopupMessage) {
 
-	var fsClient = knox.createClient({
-		key: process.env.AWS_KEY,
-		secret: process.env.AWS_SECRET,
-		bucket: "hellobilllogs",
-	});
-	bluebird.promisifyAll(fsClient);
 	bluebird.promisifyAll(bw);
 	bluebird.promisifyAll(bw.webContents);
 	// var lastMessageUUID = null;
 	// var lastMessageData = null;
 	// var messageUUIDCounter = 1;
-
-	//catpurePage does not respect the first callback arg error standard
-	function capturePageAsync() {
-		return new Promise((yes) => {
-			bw.capturePage((nativeImage) => {
-				return yes(nativeImage);
-			})
-		})
-	}
 
 	this.emitter = new MyEmitter();
 	var self = this;
@@ -504,18 +488,18 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			if (data.messageUUID) {
 				throw new Error("data.messageUUID is already defined!");
 			}
-			data.messageUUID = messageUUIDCounter++;
-			setlastMessageUUID(data.messageUUID);
-			lastMessageData = data;
-			winston.info('sending message to browser', {messageName: messageName, data: data})
-			bw.send(messageName, data);
-			// } else {
-			// 	winston.info('can not receive order right now, postponing!');
-			//
-			// 	setTimeout(function() {
-			// 		sendToBrowser(data);
-			// 	}, 3000);
-			// }
+			
+			screenCapture(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
+			.catch((err) => {
+				winston.error('we got an error screen capturing, lets send the message now!');
+			})
+			.then(() => {
+				data.messageUUID = messageUUIDCounter++;
+				setlastMessageUUID(data.messageUUID);
+				lastMessageData = data;
+				winston.info('sending message to browser', {messageName: messageName, data: data})
+				bw.send(messageName, data);
+			})
 		})
 
 	}
@@ -532,36 +516,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			setlastMessageUUID(null);
 			winston.info('got done doneExecuting message', args);
 			if (args.errorMessage) {
-				const correlatedFileName = moment().format();
-				const imageRemotePath = email+'/screenshots/'+serviceName+'/'+correlatedFileName+'.png';
-				const mhtmlRemotePath = email+'/mhtml/'+serviceName+'/'+correlatedFileName+'.mhtml';
-				const mhtmlLocalPath = os.tmpdir() + '/' + serviceName + '_'+correlatedFileName+'.mhtml';
 
-				capturePageAsync()
-				.then((nativeImage) => {
-					const PNGImage = nativeImage.toPng();
 
-					return fsClient.putBufferAsync(PNGImage, imageRemotePath, {'Content-Length': PNGImage.length})
-				})
-				.then(() => {
-					winston.info('successfully uploaded the screenshot %s', imageRemotePath)
-				})
-				.then(() => {
-					return bw.webContents.savePageAsync(mhtmlLocalPath, 'MHTML')
-					.then(() => {
-						return fsClient
-						.putFileAsync(mhtmlLocalPath, mhtmlRemotePath);
-					})
-				})
-				.then(() => {
-					winston.info('successfully uploaded the mhtml %s', mhtmlRemotePath)
-				})
-				.catch((err) => {
-					winston.error("We got an error trying to dump the mhtml and screenshot: %s %s", err.name, err.message);
-				})
-				.then(() => {
-						callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
-				});
 			} else {
 				callback(null, args.result);
 			}

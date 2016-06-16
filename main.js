@@ -25,6 +25,7 @@ const fs = require('fs');
 const nodeApp = electron.app;
 const urlParser = require('url');
 
+process.env.STARTUP_TIME = moment().format('x');
 var Menu = electron.Menu;
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
@@ -449,7 +450,7 @@ function createWindow () {
                  bucket: "hellobilllogs",
           access_key_id: process.env.AWS_KEY,
       secret_access_key: process.env.AWS_SECRET,
-      name_format: email+'/%Y-%m-%d-%H-%M-%S-%L.log',
+      name_format: email+'/%Y_%m_%d/'+process.env.STARTUP_TIME+'.log',
     });
     s3_stream.on('error', (error) => {
       console.log('S3 stream error:', error);

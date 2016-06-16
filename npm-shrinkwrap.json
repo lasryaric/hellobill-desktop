@@ -3559,6 +3559,11 @@
       "version": "2.4.1",
       "from": "yauzl@2.4.1",
       "resolved": "https://registry.npmjs.org/yauzl/-/yauzl-2.4.1.tgz"
+    },
+    "zpad": {
+      "version": "0.5.0",
+      "from": "zpad@latest",
+      "resolved": "https://registry.npmjs.org/zpad/-/zpad-0.5.0.tgz"
     }
   }
 }
