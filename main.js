@@ -7,6 +7,12 @@ if (process.env.NODE_ENV) {
   dotenv.load({ path: __dirname+'/.env.production' });
 }
 console.log('Loaded env:'+ process.env.LOADED_FILE);
+const squirelEventHandler = require('./lib/SquirelEventHandler.js');
+
+if (squirelEventHandler()) {
+  return ;
+
+}
 
 const electron = require('electron');
 const shell = electron.shell;
@@ -539,4 +545,3 @@ if (shouldQuit) {
     winston.error('uncaughtException:', {errorProps: errorProps})
   });
 
-require('./lib/SquirelEventHandler.js')
