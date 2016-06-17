@@ -15,7 +15,7 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const screenCapture = require('./lib/screenCapture').screenCapture;
+const screenCapture = require('./lib/ScreenCapture').screenCapture;
 
 
 

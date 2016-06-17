@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "1.26.0",
+  "version": "1.26.1",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
@@ -27,6 +27,7 @@
   "devDependencies": {
     "electron-prebuilt": "^1.1.1",
     "electron-rebuild": "^1.1.5",
+    "electron-winstaller": "^2.3.1",
     "grunt": "^1.0.1",
     "grunt-electron-installer": "^2.1.0"
   },
