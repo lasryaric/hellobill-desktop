@@ -30,7 +30,7 @@ var Menu = electron.Menu;
 var S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 
-// winston.add(winston.transports.File, { filename: '/Users/ariclasry/Desktop/hellobilllogs.log', json:false });
+ //winston.add(winston.transports.File, { filename: 'C:\\Users\\Aric Lasry\\Documents\\GitHub\\hellobill-desktopapp\\app.log', json:false });
 
 
 const AppConstants = require('./lib/constants/AppConstants');
@@ -38,6 +38,7 @@ const FSClient = require('./lib/utils/FSClient')
 const Slack = require('./lib/utils/Slack');
 const StrFormat = require('./lib/utils/StrFormat');
 const appAutoUpdater = require('./lib/AppAutoUpdater')
+const onOpenURL = require('./lib/AppURL').onOpenURL;
 
 
 // Module to control application life.
@@ -91,6 +92,12 @@ function createWindow () {
     ipcMain.on('remoteLog', function(sender, message) {
 
       winston.info('< ' + message.message)
+    })
+
+    ipcMain.on('LogMeIn', (sender, message) => {
+      console.log('********** LogMeIn!!!!!!', message);
+      const logmeURL = message.url;
+      onOpenURL(logmeURL, appWindow);
     })
 
     var testingCredentials = false;
@@ -366,25 +373,40 @@ function createWindow () {
     })
   }
 
+
+const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
+  // Someone tried to run a second instance, we should focus our window.
+  if (appWindow) {
+    if (appWindow.isMinimized()) appWindow.restore();
+    appWindow.focus();
+
+    if (commandLine.length === 2) {
+      if (appWindow) {
+       onOpenURL(commandLine[1], appWindow);  
+      }
+    }    
+  }
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
+
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.on('ready', createWindow);
 
   app.on('ready', () => {
+
     const protocolName = 'hellobill';
-    nodeApp.removeAsDefaultProtocolClient(protocolName);
     nodeApp.setAsDefaultProtocolClient(protocolName);
-    console.log('isDefaultProtocolClient?', nodeApp.isDefaultProtocolClient(protocolName))
+    const isDefault = nodeApp.isDefaultProtocolClient(protocolName);
+    
     app.on('open-url', (event, string) => {
         event.preventDefault();
-        var parsedURL = urlParser.parse(string, true);
-        const token = parsedURL.query.token;
-        const escapedToken = encodeURIComponent(token);
-        const nextURL = process.env.WEBAPP_STARTING_POINT + '/desktop/'+AppConstants.webVersion+'/app/account';
-        const escapedNextURL = encodeURIComponent(nextURL);
-        const url = process.env.WEBAPP_STARTING_POINT + "/api/user/regeneratesession?sessionID="+escapedToken+"&nextURL="+escapedNextURL;
-
-        appWindow.loadURL(url);
+        onOpenURL(string, appWindow);
         setTimeout(() => {
           if (app) {
             // electron.dialog.showMessageBox(null, {
@@ -395,8 +417,13 @@ function createWindow () {
             // })
             appWindow.focus();
           }
-        }, 100)
+        }, 100);
 
+    })
+
+    //hack for windows dev:
+    ipcMain.on('GotToken', (event, url) => {
+      
     })
   })
 

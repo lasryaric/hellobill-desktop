@@ -4,12 +4,15 @@ module.exports = function(grunt) {
   grunt.initConfig({
     'create-windows-installer': {
       x64: {
-        appDirectory: 'hellobill-win32-x64',
-        outputDirectory: './output',
+        appDirectory: '../hellobill-win32-x64',
+        outputDirectory: '../output',
         exe: 'hellobill.exe',
-        noMsi: true,
+       
         setupExe:'Hellobill.exe',
-        remoteReleases: ''
+        remoteReleases: '',
+        'signWithParams':' /a ',
+        'iconUrl':'https://s3.amazonaws.com/www.hellobill.io/desktop-assets/hellobill.ico.ico',
+        'loadingGif':'./resources/windows/hellobillinstaller.gif'
       }
     }
   });
@@ -18,3 +21,4 @@ module.exports = function(grunt) {
   grunt.registerTask('default', ['create-windows-installer']);
 
 };
+
