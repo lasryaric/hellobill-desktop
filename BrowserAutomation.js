@@ -488,8 +488,14 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			if (data.messageUUID) {
 				throw new Error("data.messageUUID is already defined!");
 			}
-			
-			screenCapture(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
+			var screenCapturePromise = null;
+			if (process.env.LOADED_FILE !== 'production') {
+				screenCapturePromise = new Promise((yes) => {yes();})
+			} else {
+					screenCapturePromise = screenCapture(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
+			}
+
+			screenCapturePromise
 			.catch((err) => {
 				winston.error('we got an error screen capturing, lets send the message now!');
 			})
