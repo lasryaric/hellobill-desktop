@@ -2,7 +2,6 @@
 
 function getInvoicesURLS(data) {
   //date: 2016-01
-  debugger;
   const date = data.date;
   const _ = window.__hellobill.utils._;
   const moment = window.__hellobill.utils.moment;
