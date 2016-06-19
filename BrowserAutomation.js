@@ -15,7 +15,7 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const screenCapture = require('./lib/ScreenCapture').screenCapture;
+const crawlerDebug = require('./lib/CrawlerDebug').crawlerDebug;
 
 
 
@@ -488,14 +488,14 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			if (data.messageUUID) {
 				throw new Error("data.messageUUID is already defined!");
 			}
-			var screenCapturePromise = null;
+			var crawlerDebugPromise = null;
 			if (process.env.LOADED_FILE !== 'production') {
-				screenCapturePromise = new Promise((yes) => {yes();})
+				crawlerDebugPromise = new Promise((yes) => {yes();})
 			} else {
-					screenCapturePromise = screenCapture(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
+					crawlerDebugPromise = crawlerDebug(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
 			}
 
-			screenCapturePromise
+			crawlerDebugPromise
 			.catch((err) => {
 				winston.error('we got an error screen capturing, lets send the message now!');
 			})
