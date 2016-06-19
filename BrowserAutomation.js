@@ -780,6 +780,17 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		return bw.getURL();
 	}
 
+	// this.setUpListen = function() {
+	// 	bw.webContents.session.webRequest.onBeforeRequest(function(details, callback) {
+  //        //return callback({
+	// 			 if (details.method == 'POST') {
+	// 				 console.log("################"+detail)
+	// 			 }
+  //        //console.log(details.url,"@@",details.method)
+  //        //});
+	// 	});
+	// }
+
 	bluebird.promisifyAll(this);
 }
 
