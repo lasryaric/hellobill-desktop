@@ -5,7 +5,6 @@ function getInvoicesURLS(data) {
  var date = data.date;
 
  return new Promise((yes, no) => {
-   debugger;
    const moment = window.__hellobill.utils.moment;
    const dateRegStr = moment(date, "YYYY-MM").format("MMMM").substring(0,3).concat(moment(date, "YYYY-MM").format("[.*]YYYY"));
    const orders = document.querySelectorAll('tr.statement__line');

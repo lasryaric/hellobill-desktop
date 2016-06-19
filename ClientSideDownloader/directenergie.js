@@ -3,7 +3,6 @@
 function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
-  debugger;
   const _ = window.__hellobill.utils._;
   const moment = window.__hellobill.utils.moment;
   const elements = document.querySelectorAll('form#form_duplicata div.twelve.columns.balance-box');
