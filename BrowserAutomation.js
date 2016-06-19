@@ -15,7 +15,7 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const crawlerDebug = require('./lib/CrawlerDebug').crawlerDebug;
+const crawlerDebug = require('./lib/CrawlerDebugger').crawlerDebug;
 
 
 
