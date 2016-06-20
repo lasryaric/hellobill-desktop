@@ -489,7 +489,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				throw new Error("data.messageUUID is already defined!");
 			}
 			var crawlerDebugPromise = null;
-			if (process.env.LOADED_FILE !== 'production') {
+			if (1 || process.env.LOADED_FILE !== 'production') {
 				crawlerDebugPromise = new Promise((yes) => {yes();})
 			} else {
 					crawlerDebugPromise = crawlerDebug(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
