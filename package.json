@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "1.27.1",
+  "version": "1.27.2",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
