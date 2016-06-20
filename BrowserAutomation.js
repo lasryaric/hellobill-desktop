@@ -522,8 +522,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			setlastMessageUUID(null);
 			winston.info('got done doneExecuting message', args);
 			if (args.errorMessage) {
-
-
+				callback(new errors.ConnectorErrorCouldNotExecute(args.errorMessage));
 			} else {
 				callback(null, args.result);
 			}
