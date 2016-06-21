@@ -13,9 +13,8 @@ function down(data) {
   const date = data.date;
   const _ = window.__hellobill.utils._;
   const moment = window.__hellobill.utils.moment;
-  const regStr = moment(date, "YYYY-MM").locale('fr').format("MM[.*]YYYY");
+  const regStr = moment(date, "YYYY-MM").locale('fr').format("MM/[.*]/YYYY");
   const allElements = document.querySelectorAll('tr[id*="my-order"] td.c1');
-
   return new Promise((yes,no) => {
     const okElements = _.filter(allElements, function(elem) {
       const dateText = elem.textContent;
