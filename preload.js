@@ -168,7 +168,6 @@ function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback)
 			callback(new Error('runnerWaitForCss: could not find cssSelector: '+cssStringified), originalMessage);
 		} else {
 			elementExists.elementExists = false;
-			elementExists.ex = false;
 			callback(null, originalMessage, elementExists);
 		}
 	}

@@ -342,9 +342,17 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		const mergedCss = _.merge({}, cssValidLogin, cssNeedHelp);
 		var foundLoginCss = false;
 		var foundNeedHelpCss = false;
+		var windowClosed = false;
+
+		function onCloseEventHandler(event) {
+			winston.info('User tried to close the window, silently preventing the event and hiding...');
+			event.preventDefault();
+			event.sender.hide();
+			windowClosed = true;
+		}
 
 		return self
-		.waitForCssAsync(mergedCss, true)
+		.waitForCssAsync(mergedCss, true, 10*1000)
 		.then((ex) => {
 			_.each(mergedCss, (v, k) => {
 				if (ex.ex[k]) {
@@ -358,9 +366,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 					}
 				}
 			})
-			if (foundLoginCss) {
-				callback(null, ex);
-			} else {
+			if (!foundLoginCss) {
 				winston.log('now showing the browser on %s', bw.getURL());
 				if (twoSSPopupMessage) {
 					electron.dialog.showMessageBox(null, {
@@ -370,13 +376,24 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	          buttons:['Bring on the '+serviceName+' website'],
 	        })
 				}
+				bw.once('close', onCloseEventHandler);
 				bw.show();
-				const humanTimeout = 1000 * 60 * 3; // 3 mintes timeout
-				return self.waitForCssAsync(cssValidLogin, false, humanTimeout)
+
+				const secondsToWait = 10;
+				return bluebird.each(_.range(20), () => {
+					const humanTimeout = parseInt(1000 * secondsToWait); // 1.5 minutes timeout
+					if (false === windowClosed) {
+							return self.waitForCssAsync(cssValidLogin, true, humanTimeout)
+					}
+				})
 			}
 		})
+		.then(() => {
+			return self.waitForCssAsync(cssValidLogin, true, 10)
+		})
 		.then((ex) => {
-			if (true === ex.elementExists) {
+			bw.removeListener('close', onCloseEventHandler);
+			if (false === foundLoginCss) {
 				if (twoSSPopupMessage) {
 					electron.dialog.showMessageBox(null, {
 						title: "Read this",
@@ -386,10 +403,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 					})
 				}
 				bw.hide();
-				callback(null, ex);
-			} else {
-				throw new errors.ConnectorErrorCouldNotExecute('Error while authenticating using the two factor authentication mechanism');
+
 			}
+			callback(null, ex);
 		})
 		.catch(callback)
 	}
