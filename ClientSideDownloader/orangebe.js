@@ -21,7 +21,7 @@ function download(date, offset, done, next) {
     return ;
   }
 
-  var a = okElements[offset].querySelector('a[href*="invoices/pdf/summary"]')
+  var a = okElements[offset].querySelector('a[href*="invoices/pdf/detail"]')
 
   if (a) {
     a.click();

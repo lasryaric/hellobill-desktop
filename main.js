@@ -199,13 +199,13 @@ function createWindow () {
       // months = months.reverse();
       //months = ['2015-11'];
 
-      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
+      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...',percentage:0});
       var doNotRetryList = immutable.Set();
 
       function fileDownloadedHandler(data) {
         console.log('file downloaded!', data)
         if (!sessionStats[data.name]) {
-          sessionStats[data.name] = 1;
+          sessionStats[data.name] = 0;
         }
         sessionStats[data.name]++;
 
@@ -237,7 +237,7 @@ function createWindow () {
           .each(months, (monthStr) => {
           const thisMoment = moment(monthStr, "YYYY-MM");
 
-          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+parseInt((counter/total * 100), 10)+'%)'});
+          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM"),percentage:Math.max(1,parseInt((counter/total * 100), 10))});
           counter++;
 
           if (doNotRetryList.has(modelConnector.get('_id'))) {

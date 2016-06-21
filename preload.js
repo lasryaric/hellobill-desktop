@@ -219,7 +219,7 @@ function whenDone(error, originalMessage, resultData) {
 		data.errorMessage = error.message;
 	}
 	data.originalMessageUUID = originalMessage.messageUUID;
-
+	// console.log(data.originalMessageUUID);
 	window.__hellobill.ipc.send(messageName, data);
 	// remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
 
@@ -241,8 +241,8 @@ function __hellobillLoop() {
 
 	console.log('got a message from main process:', message)
 	// console.log('message', message);
-
-
+	//debugger;
+	console.log(message.messageUUID);
 	if ( message.action === 'click') {
 		runnerClick(message.cssSelector, message, whenDone);
 	} else if (message.action === 'clickAll') {
