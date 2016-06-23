@@ -388,9 +388,9 @@ const shouldQuit = app.makeSingleInstance((commandLine, workingDirectory) => {
 
     if (commandLine.length === 2) {
       if (appWindow) {
-       onOpenURL(commandLine[1], appWindow);  
+       onOpenURL(commandLine[1], appWindow);
       }
-    }    
+    }
   }
 });
 
@@ -409,7 +409,7 @@ if (shouldQuit) {
     const protocolName = 'hellobill';
     nodeApp.setAsDefaultProtocolClient(protocolName);
     const isDefault = nodeApp.isDefaultProtocolClient(protocolName);
-    
+
     app.on('open-url', (event, string) => {
         event.preventDefault();
         onOpenURL(string, appWindow);
@@ -429,9 +429,18 @@ if (shouldQuit) {
 
     //hack for windows dev:
     ipcMain.on('GotToken', (event, url) => {
-      
+
     })
   })
+
+  app.on('ready', () => {
+    app.on('will-quit', () => {
+      winston.info("App will quit...")
+    })
+    app.on('will-quit', () => {
+      winston.info("App quit")
+    })
+  });
 
 
   // Quit when all windows are closed.
@@ -484,6 +493,7 @@ if (shouldQuit) {
           access_key_id: process.env.AWS_KEY,
       secret_access_key: process.env.AWS_SECRET,
       name_format: email+'/%Y_%m_%d/'+process.env.STARTUP_TIME+'.log',
+      upload_every:500,
     });
     s3_stream.on('error', (error) => {
       console.log('S3 stream error:', error);
@@ -492,7 +502,13 @@ if (shouldQuit) {
     winston.add(winston.transports.File, {
       stream: s3_stream,
       json: false,
+      handleExceptions: true,
     })
+
+    winston.info('S3 log initiated...')
+    setTimeout(() => {
+      throw new Error('quit and check events!')
+    }, 3000)
     winston.rewriters.push(function(level, msg, metaOriginal) {
       const meta = _.cloneDeep(metaOriginal);
       const actionType = meta && meta.data && meta.data.action;
@@ -542,6 +558,12 @@ if (shouldQuit) {
       errMessage: err.message,
       errStack: err.stack
     }
-    winston.error('uncaughtException:', {errorProps: errorProps})
-  });
+    winston.error('uncaughtException:', {errorProps: errorProps}, () => {
+      console.log('exiting process now...')
+      setTimeout(() => {
+        console.log("Giving time to s3stream logger to upload logs...")
+        process.exit(1);
+      }, 5000)
 
+    })
+  });
