@@ -64,9 +64,9 @@ function runnerGoto(url, originalMessage, callback) {
 
 setTimeout(() => {
 	window.location = url;
-}, 400);
+}, 1);
 
-	callback(null, originalMessage);
+	//callback(null, originalMessage);
 }
 
 function runnerGetInnerHTML(cssSelector, originalMessage, callback) {

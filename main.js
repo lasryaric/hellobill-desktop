@@ -434,8 +434,12 @@ if (shouldQuit) {
   })
 
   app.on('ready', () => {
-    app.on('will-quit', () => {
-      winston.info("App will quit...")
+    app.on('will-quit', (event) => {
+      event.preventDefault();
+      winston.info("App will quit, we are delaying to let the time to s3 streamlogger to upload the logs");
+      setTimeout(() => {
+        process.exit(0);
+      }, 3000)
     })
     app.on('will-quit', () => {
       winston.info("App quit")
@@ -492,12 +496,14 @@ if (shouldQuit) {
                  bucket: "hellobilllogs",
           access_key_id: process.env.AWS_KEY,
       secret_access_key: process.env.AWS_SECRET,
-      name_format: email+'/%Y_%m_%d/'+process.env.STARTUP_TIME+'.log',
+      name_format: email+'/%Y_%m_%d/%Y-%m-%d-%H-%M-%S-%L_'+process.env.STARTUP_TIME+'.log',
+      max_file_size: 50000000,
       upload_every:500,
     });
     s3_stream.on('error', (error) => {
       console.log('S3 stream error:', error);
     })
+
 
     winston.add(winston.transports.File, {
       stream: s3_stream,
@@ -506,9 +512,7 @@ if (shouldQuit) {
     })
 
     winston.info('S3 log initiated...')
-    setTimeout(() => {
-      throw new Error('quit and check events!')
-    }, 3000)
+
     winston.rewriters.push(function(level, msg, metaOriginal) {
       const meta = _.cloneDeep(metaOriginal);
       const actionType = meta && meta.data && meta.data.action;

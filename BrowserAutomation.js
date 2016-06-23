@@ -43,7 +43,7 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		if (nbListeners !== 1) {
 			winston.error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
 			if (process.env.LOADED_FILE !== 'production') {
-				// throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
+				throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
 			}
 		}
 
@@ -155,15 +155,6 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		onNextActionCompleted(callback);
 	}
 
-	this.clickAndWaitForPage = function(cssSelector, callback) {
-		const message = {
-			action: 'click',
-			cssSelector: cssSelector,
-		};
-
-		sendToBrowser(message);
-		onNextPageLoad(callback);
-	}
 
 	this.getInnerHTML = function(cssSelector, callback) {
 		const message = {
@@ -508,7 +499,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			if (1 || process.env.LOADED_FILE !== 'production') {
 				crawlerDebugPromise = new Promise((yes) => {yes();})
 			} else {
-					crawlerDebugPromise = crawlerDebug(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
+					// crawlerDebugPromise = crawlerDebug(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
 			}
 
 			crawlerDebugPromise
@@ -583,9 +574,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		winston.info('Asked to listen on url %s', url)
 		safeBrowserWindowSync((bw) => {
 			// bw.webContents.session.webRequest.onCompleted(['*'], didFailedLoadHandler);
-			bw.webContents.once('doneExecuting', () => {
-				console.log('goto() catching doneExecuting event, but doing nothing with it')
-			})
+			// bw.webContents.once('doneExecuting', () => {
+			// 	console.log('goto() catching doneExecuting event, but doing nothing with it')
+			// })
 
 			bw.webContents.once('runloop-ready', didLoadFinishHandler);
 			winston.info('now listening on url %s', url)
