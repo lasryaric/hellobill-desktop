@@ -3,8 +3,6 @@
 function pageUrls(data) {
   const urls = data.urls;
   return new Promise((yes,no) => {
-    console.log("##################")
-    console.log(urls)
     yes(urls)
   })
 }
@@ -14,7 +12,6 @@ function getInvoicesURLS() {
     const elements = document.querySelectorAll('ul[spacing="medium"][direction="vertical"] li');
     const send = window.__hb._.map(elements, (order) => {
       var title = order.querySelectorAll('td')[0].querySelectorAll('div[display="block"][type="inherit"]')[0].textContent;
-      console.log("@@@@@@@@@@@@@@@@@@"+title)
       const trans = order.querySelectorAll('a[href*="manager/billing/transaction_details"]');
       const sent = window.__hb._.map(trans, (link) => {
         return link.href;
