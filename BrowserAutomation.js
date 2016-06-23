@@ -15,7 +15,7 @@ const fs = require('fs');
 const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
-const crawlerDebug = require('./lib/CrawlerDebugger').crawlerDebug;
+const Slack = require('./lib/utils/Slack');
 
 
 
@@ -358,7 +358,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				}
 			})
 			if (!foundLoginCss) {
-				winston.log('now showing the browser on %s', bw.getURL());
+				winston.info('now showing the browser on %s', bw.getURL());
+				Slack.sendMessage('Two step signin for the user '+ email+' on: '+serviceName);
 				if (twoSSPopupMessage) {
 					electron.dialog.showMessageBox(null, {
 	          title: "Read this",
