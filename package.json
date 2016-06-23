@@ -1,6 +1,6 @@
 {
   "name": "hellobill",
-  "version": "1.27.2",
+  "version": "1.28.0",
   "description": "Automatically fetch all your business bills",
   "main": "main.js",
   "scripts": {
@@ -38,7 +38,7 @@
     "checksum": "^0.1.1",
     "clarify": "^1.0.5",
     "dotenv": "^2.0.0",
-    "electron-prebuilt": "^1.1.1",
+    "electron-prebuilt": "^1.2.5",
     "eslint": "^1.10.3",
     "eslint-plugin-react": "^3.16.1",
     "immutable": "^3.7.6",
