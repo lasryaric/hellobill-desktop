@@ -212,24 +212,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this.goto = function(url, callback) {
-		var gotoTimeout = setTimeout(function() {
-			var e = new Error("Calling the safe timeout of BrowserAutomation.goto() for url "+url+", something is wrong!");
-			if (process.env.LOADED_FILE === 'production') {
-
-				winston.error("Calling the safe timeout of BrowserAutomation.goto() for url %s, something is wrong! Stacktrace is: \n %s", url, e.stack);
-
-				this._goto(url, callback);
-			} else  {
-				throw e;
-			}
-		}.bind(this), 45000);
-
-		function safeCallback() {
-			clearTimeout(gotoTimeout);
-			callback();
-		}
-		this._goto(url, safeCallback);
-
+		onNextPageLoad(callback, url);
+		bw.loadURL(url);
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -581,9 +565,6 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 			bw.webContents.once('runloop-ready', didLoadFinishHandler);
 			winston.info('now listening on url %s', url)
-			scheduleErrorTimeout(() => {
-				bw.webContents.removeListener('runloop-ready', didLoadFinishHandler);
-			})
 		})
 
 	}
