@@ -16,6 +16,7 @@ const request = require('requestretry');
 const _ = require('lodash');
 const tough = require('tough-cookie');
 const Slack = require('./lib/utils/Slack');
+const urlParser = require('url');
 
 
 
@@ -212,8 +213,12 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this.goto = function(url, callback) {
+		if (url.indexOf('://') === -1) {
+			url = urlParser.resolve(this.getURL(), url);
+		}
 		onNextPageLoad(callback, url);
 		bw.loadURL(url);
+		winston.info("Just called bw.loadURL(%s)", url)
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -248,7 +253,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	this.gotoInApp = function(url, callback) {
 		const message = {
-			action: 'goto',
+			action: 'gotoInApp',
 			url: url
 		};
 

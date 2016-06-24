@@ -66,7 +66,7 @@ setTimeout(() => {
 	window.location = url;
 }, 1);
 
-	//callback(null, originalMessage);
+	callback(null, originalMessage);
 }
 
 function runnerGetInnerHTML(cssSelector, originalMessage, callback) {
@@ -178,7 +178,7 @@ function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback)
 function runnerDownload(serviceName, date, originalMessage) {
 	//debugger;
 	const downloader = window.__hb.downloaders(serviceName);
-	var downloadOffset = 1;
+	var downloadOffset = 0;
 
 	function doneDownloading() {
 		window.__hellobill.ipc.removeListener('downloadNext', downloadNextHandler);
@@ -186,8 +186,9 @@ function runnerDownload(serviceName, date, originalMessage) {
 	}
 
 	function downloadNextHandler() {
-		downloader.download(date, downloadOffset, doneDownloading);
 		downloadOffset++;
+		console.log('calling download next handler with ', downloadOffset)
+		downloader.download(date, downloadOffset, doneDownloading, downloadNextHandler);
 	}
 
 	window.__hellobill.ipc.on('downloadNext', downloadNextHandler);
@@ -249,7 +250,7 @@ function __hellobillLoop() {
 		runnerClickAll(message.cssSelector, message, whenDone);
 	} else if (message.action === 'typeText') {
 		runnerTypeText(message.cssSelector, message.text, message, whenDone);
-	} else if (message.action === 'goto') {
+	} else if (message.action === 'gotoInApp') {
 		runnerGoto(message.url, message, whenDone);
 	} else if (message.action === 'getInnerHTML') {
 		runnerGetInnerHTML(message.cssSelector, message, whenDone)

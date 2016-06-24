@@ -439,7 +439,7 @@ if (shouldQuit) {
       winston.info("App will quit, we are delaying to let the time to s3 streamlogger to upload the logs");
       setTimeout(() => {
         process.exit(0);
-      }, 3000)
+      }, 1500)
     })
     app.on('will-quit', () => {
       winston.info("App quit")
