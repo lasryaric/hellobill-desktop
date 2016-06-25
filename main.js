@@ -189,13 +189,14 @@ function createWindow () {
       const startDate = moment(fetchParams.startDate, dateFormat);
       const now = moment();
       var months = [];
-
-      while (startDate.format(dateFormat) !== now.format(dateFormat)) {
-        months.push(startDate.format(dateFormat));
-        startDate.add('1', 'months');
-      }
       months.push(startDate.format(dateFormat));
-      startDate.add('1', 'months');
+      //
+      // while (startDate.format(dateFormat) !== now.format(dateFormat)) {
+      //   months.push(startDate.format(dateFormat));
+      //   startDate.add('1', 'months');
+      // }
+      // months.push(startDate.format(dateFormat));
+      // startDate.add('1', 'months');
       // months = months.reverse();
       //months = ['2015-11'];
 
@@ -231,7 +232,7 @@ function createWindow () {
 
         const modelConnectorJS = modelConnector.toJS();
         const cr = new ConnectorsRunner();
-        cr.on('fileDownloaded', fileDownloadedHandler);
+        // cr.on('fileDownloaded', fileDownloadedHandler);
 
           return bluebird
           .each(months, (monthStr) => {

@@ -37,23 +37,29 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		const uuid = a.originalMessageUUID;
 		const webContents = event.sender;
 		if (uuid != lastMessageUUID) {
-			winston.info('********************** Skipping message uuid %s because we already processed it', uuid);
+			winston.info('********************** Skipping message uuid %s because we already processed it', {currentUUDI:uuid, lastMessageUUID:lastMessageUUID});
 			return ;
 		}
-		const nbListeners = webContents.listenerCount('doneExecuting');
-		if (nbListeners !== 1) {
-			winston.error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
-			if (process.env.LOADED_FILE !== 'production') {
-				throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
-			}
+		// const nbListeners = webContents.listenerCount('doneExecuting');
+		// if (nbListeners !== 1) {
+		// 	winston.error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!! listeners:', webContents.listeners('doneExecuting'));
+		// 	if (process.env.LOADED_FILE !== 'production') {
+		// 		throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
+		// 	}
+		// }
+		if (_uuid2callback[uuid]) {
+			_uuid2callback[uuid](event, a, b, c);
+			delete(_uuid2callback[uuid])
+		} else {
+			throw new Error('Do not have any callback for message UUID' + uuid)
 		}
-
-		webContents.emit('doneExecuting', event, a, b, c);
+		// webContents.emit('doneExecuting', event, a, b, c);
 });
 
 var lastMessageUUID = null;
 var lastMessageData = null;
 var messageUUIDCounter = 1;
+var _uuid2callback = {};
 
 
 function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername, modelConnector, twoSSPopupMessage) {
@@ -216,9 +222,9 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		if (url.indexOf('://') === -1) {
 			url = urlParser.resolve(this.getURL(), url);
 		}
-		onNextPageLoad(callback, url);
 		bw.loadURL(url);
 		winston.info("Just called bw.loadURL(%s)", url)
+		onNextPageLoad(callback, url);
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -308,12 +314,13 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			console.log('cleared the callback 1');
 			winston.info("waitForCss re-injecting after page change while waiting.", {cssSelector:cssSelector, silent:silent})
 			_waitForCss(cssSelector, silent);
+			onNextActionCompleted(safeCallback);
 		}
 
 		bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
 
-		onNextActionCompleted(safeCallback);
 		_waitForCss(cssSelector, silent)
+		onNextActionCompleted(safeCallback);
 
 	}
 
@@ -476,35 +483,18 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 
 	function sendToBrowser(data) {
-		safeBrowserWindowSync((bw) => {
-			// if (bw.canReceiveOrder === true) {
-			if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
-				winston.error("Last message UUID is not null and we are trying to send another one", {lastMessageUUID: lastMessageUUID, newData: JSON.stringify(data), lastMessageData:JSON.stringify(lastMessageData)});
-				throw new Error("Last message UUID is not null and we are trying to send another one");
-			}
-			if (data.messageUUID) {
-				throw new Error("data.messageUUID is already defined!");
-			}
-			var crawlerDebugPromise = null;
-			if (1 || process.env.LOADED_FILE !== 'production') {
-				crawlerDebugPromise = new Promise((yes) => {yes();})
-			} else {
-					// crawlerDebugPromise = crawlerDebug(bw, email, serviceName, 'hardcodedsession', messageUUIDCounter)
-			}
-
-			crawlerDebugPromise
-			.catch((err) => {
-				winston.error('we got an error screen capturing, lets send the message now!');
-			})
-			.then(() => {
-				data.messageUUID = messageUUIDCounter++;
-				setlastMessageUUID(data.messageUUID);
-				lastMessageData = data;
-				winston.info('sending message to browser', {messageName: messageName, data: data})
-				bw.send(messageName, data);
-			})
-		})
-
+		if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
+			winston.error("Last message UUID is not null and we are trying to send another one", {lastMessageUUID: lastMessageUUID, newData: JSON.stringify(data), lastMessageData:JSON.stringify(lastMessageData)});
+			throw new Error("Last message UUID is not null and we are trying to send another one");
+		}
+		if (data.messageUUID) {
+			throw new Error("data.messageUUID is already defined!");
+		}
+		data.messageUUID = messageUUIDCounter++;
+		setlastMessageUUID(data.messageUUID);
+		lastMessageData = data;
+		winston.info('sending message to browser', {messageName: messageName, data: data})
+		bw.send(messageName, data);
 	}
 
 
@@ -527,12 +517,10 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 
 		}
-
-		bw.webContents.once('doneExecuting', onNextActionCompletedHandler);
-
-		scheduleErrorTimeout(() => {
-			wb.webContents.removeListener('doneExecuting', onNextActionCompletedHandler);
-		})
+		const currentUUID = messageUUIDCounter - 1;
+		winston.info("Registering callback for UUID "+currentUUID);
+		_uuid2callback[currentUUID] = onNextActionCompletedHandler;
+		// bw.webContents.once('doneExecuting', onNextActionCompletedHandler);
 	}
 
 	const onNextActionCompletedAsync = bluebird.promisify(onNextActionCompleted);
@@ -757,7 +745,8 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	this.cleanup = function() {
 		winston.info('cleaning the browswer automation object');
-		bw.canReceiveOrder = true;
+		bw.webContents.removeAllListeners();
+		bw.removeAllListeners();
 	}
 
 	function getBillDirectory(serviceName, dateStr, username, subAccount) {

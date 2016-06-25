@@ -236,6 +236,7 @@ function remoteLog(message) {
 
 function __hellobillLoop() {
 	// remoteLog('Starting the browser runLoop')
+	var _gotMessage = false;
 
 	window.__hellobill.ipc.on('invokeAction', function(event, message) {
 
@@ -271,9 +272,14 @@ function __hellobillLoop() {
 	}
 	});
 
-	// setTimeout(function() {
-		window.__hellobill.ipc.send('RunloopStarted');
-	// }, 50);
+
+		window.__hellobill.ipc.sendSync('RunloopStarted');
+		setTimeout(() => {
+			if (false === _gotMessage) {
+				// alert('using backend runloop')
+				// window.__hellobill.ipc.sendSync('RunloopStarted');
+			}
+		}, 6000)
 }
 
 
@@ -287,3 +293,7 @@ window.__hb = {};
 window.__hb.downloaders = require('./ClientSideDownloader/Downloaders');
 window.__hb.remoteLog = remoteLog;
 window.__hb._ = require('lodash');
+
+window.onload = function() {
+	window.__hellobill.runLoop();
+}
