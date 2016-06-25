@@ -47,6 +47,11 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		// 		throw new Error('we have '+nbListeners+' listening on doneExecuting!!!!!!!!!!!!!');
 		// 	}
 		// }
+		if (uuid !== waitingForMessageUUID) {
+			winston.error("Got a message response for an outdate messageUUID:", {uuid: uuid, waitingForMessageUUID:waitingForMessageUUID})
+			
+			return ;
+		}
 		if (_uuid2callback[uuid]) {
 			_uuid2callback[uuid](event, a, b, c);
 			delete(_uuid2callback[uuid])
@@ -59,6 +64,7 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 var lastMessageUUID = null;
 var lastMessageData = null;
 var messageUUIDCounter = 1;
+var waitingForMessageUUID = null;
 var _uuid2callback = {};
 
 
@@ -490,6 +496,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		if (data.messageUUID) {
 			throw new Error("data.messageUUID is already defined!");
 		}
+		waitingForMessageUUID = messageUUIDCounter;
 		data.messageUUID = messageUUIDCounter++;
 		setlastMessageUUID(data.messageUUID);
 		lastMessageData = data;

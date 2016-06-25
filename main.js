@@ -447,6 +447,35 @@ if (shouldQuit) {
     })
   });
 
+  // var testWindow = null;
+  // var pingNumber = 1;
+  // function sendPing(w) {
+  //   console.log('sending ping ' + pingNumber)
+  //   w.send('ping', {number:pingNumber});
+  //   pingNumber++;
+  // }
+  // app.on('ready', () => {
+  //   testWindow = new BrowserWindow({width: 1024, height: 860, show:true,
+  //     "webPreferences": {
+  //       partition:'persist:' + 'arictest',
+  //       images: true, //loadImages,
+  //       nodeIntegration: false,
+  //       preload: __dirname + '/preload2.js',
+  //     }});
+  //     testWindow.webContents.openDevTools();
+  //     testWindow.loadURL('http://localhost:3000/desktop/bootstrap');
+  //     ipcMain.on('pong', function(sender, message) {
+  //       console.log('pong '+ message.number)
+  //       setTimeout(() => {
+  //         sendPing(testWindow);
+  //       }, 2000)
+  //     })
+  //     setTimeout(() => {
+  //         sendPing(testWindow);
+  //     }, 3000)
+  //
+  // })
+
 
   // Quit when all windows are closed.
   app.on('window-all-closed', function () {
@@ -565,6 +594,7 @@ if (shouldQuit) {
     }
     winston.error('uncaughtException:', {errorProps: errorProps}, () => {
       console.log('exiting process now...')
+
       setTimeout(() => {
         console.log("Giving time to s3stream logger to upload logs...")
         process.exit(1);

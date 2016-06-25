@@ -272,7 +272,6 @@ function __hellobillLoop() {
 	}
 	});
 
-
 		window.__hellobill.ipc.sendSync('RunloopStarted');
 		setTimeout(() => {
 			if (false === _gotMessage) {
@@ -294,6 +293,8 @@ window.__hb.downloaders = require('./ClientSideDownloader/Downloaders');
 window.__hb.remoteLog = remoteLog;
 window.__hb._ = require('lodash');
 
-window.onload = function() {
+// window.onload = function() {
+document.addEventListener('DOMContentLoaded', function() {
+	
 	window.__hellobill.runLoop();
-}
+});
