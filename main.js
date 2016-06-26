@@ -8,6 +8,9 @@ if (process.env.NODE_ENV) {
 }
 console.log('Loaded env:'+ process.env.LOADED_FILE);
 const squirelEventHandler = require('./lib/SquirelEventHandler.js');
+process.isProduction = function() {
+  return !!(process.env.LOADED_FILE === 'production');
+}
 
 if (squirelEventHandler()) {
   return ;
@@ -438,9 +441,13 @@ if (shouldQuit) {
     app.on('will-quit', (event) => {
       event.preventDefault();
       winston.info("App will quit, we are delaying to let the time to s3 streamlogger to upload the logs");
-      setTimeout(() => {
+      if (process.isProduction()) {
+        setTimeout(() => {
+          process.exit(0);
+        }, 3000)
+      } else {
         process.exit(0);
-      }, 1500)
+      }
     })
     app.on('will-quit', () => {
       winston.info("App quit")
