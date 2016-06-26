@@ -21,6 +21,7 @@ const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
 const ConnectorsRunner = require('./lib/ConnectorsRunner');
+const TestCredentials = require('./lib/TestCredentials');
 const ManualFixer = require('./lib/ManualFixer');
 const moment = require('moment');
 const _ = require('lodash');
@@ -117,11 +118,8 @@ function createWindow () {
         }
         testingCredentials = true;
         const modelConnector = immutable.fromJS(modelConnectorJS);
-        const cr = new ConnectorsRunner();
-
-        cr.runIt(mUserMe, modelConnectorJS, null)
+        TestCrendentials(mUserMe, modelConnectorJS)
         .then(() => {
-          console.log('credentials valid!')
           appWindow.send('TestCrendentialsResult', {success:true})
         })
         .catch((err) => {
@@ -129,7 +127,6 @@ function createWindow () {
         })
         .finally(() => {
           testingCredentials = false;
-          return cr.closeBrowserWindow(modelConnectorJS);
         })
     })
 
@@ -453,6 +450,12 @@ if (shouldQuit) {
       winston.info("App quit")
     })
   });
+
+  app.on('ready', () => {
+    console.log('*********** run test login all *************')
+    const testLoginAll = require('./src/tests/LoginAll');
+    testLoginAll.runTests();
+  })
 
   // var testWindow = null;
   // var pingNumber = 1;
