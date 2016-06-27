@@ -49,7 +49,7 @@ ipcMain.on('doneExecuting', function(event, a, b, c) {
 		// }
 		if (uuid !== waitingForMessageUUID) {
 			winston.error("Got a message response for an outdate messageUUID:", {uuid: uuid, waitingForMessageUUID:waitingForMessageUUID})
-			
+
 			return ;
 		}
 		if (_uuid2callback[uuid]) {
@@ -767,6 +767,10 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 	this.getURL = function() {
 		return bw.getURL();
+	}
+
+	this.getBrowserWindow = function() {
+		return bw;
 	}
 
 	// this.setUpListen = function() {

@@ -118,7 +118,7 @@ function createWindow () {
         }
         testingCredentials = true;
         const modelConnector = immutable.fromJS(modelConnectorJS);
-        TestCrendentials(mUserMe, modelConnectorJS)
+        TestCredentials(mUserMe, modelConnectorJS)
         .then(() => {
           appWindow.send('TestCrendentialsResult', {success:true})
         })
@@ -452,9 +452,9 @@ if (shouldQuit) {
   });
 
   app.on('ready', () => {
-    console.log('*********** run test login all *************')
-    const testLoginAll = require('./src/tests/LoginAll');
-    testLoginAll.runTests();
+    // console.log('*********** run test login all *************')
+    // const testLoginAll = require('./src/tests/LoginAll');
+    // testLoginAll.runTests();
   })
 
   // var testWindow = null;
