@@ -5,7 +5,6 @@ String.prototype.capitalize = function() { //to capitalize first letter of strin
 }
 
 function getLinks(data) {
-  debugger;
   return new Promise((y,n) => {
     const date = data.date;
     const moment = window.__hellobill.utils.moment;

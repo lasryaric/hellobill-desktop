@@ -21,8 +21,8 @@ function down(data) {
           links.push(url);
         })
       }
+      yes(links)
     })
-    yes(links)
   })
 }
 
