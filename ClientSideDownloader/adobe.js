@@ -1,5 +1,11 @@
 'use strict';
 
+function getHTML() {
+  return new Promise((yes,no) => {
+    yes(document.querySelector('html').innerHTML)
+  })
+}
+
 function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
@@ -31,5 +37,6 @@ function download(date, offset, done) {
 }
 
 module.exports = {
-  download: download
+  download: download,
+  getHTML: getHTML,
 }

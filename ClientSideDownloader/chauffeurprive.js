@@ -1,5 +1,11 @@
 'use strict';
 
+function getHTML() {
+  return new Promise((yes,no) => {
+    yes(document.querySelector('html').innerHTML)
+  })
+}
+
 function down(data) {
   const date = data.date;
   return new Promise((yes, no) => {
@@ -31,4 +37,5 @@ function down(data) {
 
 module.exports = {
   down: down,
+  getHTML: getHTML,
 }
