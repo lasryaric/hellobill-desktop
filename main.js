@@ -206,7 +206,7 @@ function createWindow () {
       function fileDownloadedHandler(data) {
         console.log('file downloaded!', data)
         if (!sessionStats[data.name]) {
-          sessionStats[data.name] = 1;
+          sessionStats[data.name] = 0;
         }
         sessionStats[data.name]++;
 
@@ -232,7 +232,7 @@ function createWindow () {
 
         const modelConnectorJS = modelConnector.toJS();
         const cr = new ConnectorsRunner();
-        // cr.on('fileDownloaded', fileDownloadedHandler);
+        cr.on('fileDownloaded', fileDownloadedHandler);
 
           return bluebird
           .each(months, (monthStr) => {
@@ -276,6 +276,11 @@ function createWindow () {
             }
             console.log('Adding %s to the doNotRetryList: ', doNotRetryList.has(modelConnector.get('_id')));
 
+          })
+        })
+        .then(() => {
+          return new Promise((yes) => {
+            setTimeout(yes, 1000)
           })
         })
         .then(() => {
