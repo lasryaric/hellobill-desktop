@@ -12,117 +12,39 @@ const mUserMe = {
 }
 
 var credentials = [
+  {
+     "name":"github",
+     "credentials":{
+        "password":"Jo31pal00!!!",
+        "username":"lasry.aric@gmail.com"
+     }
+  },
+  {
+     "name":"google",
+     "credentials":{
+        "password":"Jo31pal0!?!",
+        "username":"aric@hellobill.io"
+     }
+  },
+  {
+     "name":"dropbox",
+     "credentials":{
+        "password":"Jo31pal00!!!",
+        "username":"lasry.aric@gmail.com"
+     }
+  },
    {
-      "name":"mailchimp",
+      "name":"ovh",
       "credentials":{
-         "password":"Jo31pal00!!!",
-         "username":"alumneye"
-      }
-   },
-   {
-      "name":"newrelic",
-      "credentials":{
-         "password":"speCeW6@edaC@e&UfraWEWradrABr4",
-         "username":"dev+newrelic@tandoori.pro"
-      }
-   },
-   {
-      "name":"orangebe",
-      "credentials":{
-         "password":"hellobill-FTW",
-         "username":"jb.escoyez"
-      }
-   },
-   {
-      "name":"balsamiq",
-      "credentials":{
-         "password":"9981Balsamiq1854",
-         "username":"pasvetchine"
-      }
-   },
-   {
-      "name":"upwork",
-      "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@spicesoft.pro"
-      }
-   },
-   {
-      "name":"frichti",
-      "credentials":{
-         "password":"hellobill1",
-         "username":"lasseri.anna@gmail.com"
-      }
-   },
-   {
-      "name":"scaleway",
-      "credentials":{
-         "password":"#q?KK7M}A,U0|J#H+#i",
-         "username":"dev@tandoori.pro"
-      }
-   },
-   {
-      "name":"edenred",
-      "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@tandoori.pro"
-      }
-   },
-   {
-      "name":"autolib",
-      "credentials":{
-         "password":"Aqwzsxedc",
-         "username":"GuthL"
-      }
-   },
-   {
-      "name":"algolia",
-      "credentials":{
-         "password":"oMXH.jLkH77QQEMk&CW;CqKfwBef",
-         "username":"michael@hellobill.io"
-      }
-   },
-   {
-      "name":"envato",
-      "credentials":{
-         "password":"alumneye01",
-         "username":"MO93100"
-      }
-   },
-  //  {
-  //     "name":"salesforce",
-  //     "credentials":{
-  //        "password":"Gf}rgGxTJumNPW=J7kQfZbe3bpA*",
-  //        "username":"michael@hellobill.io"
-  //     }
-  //  },
-   {
-      "name":"bouygues",
-      "credentials":{
-         "lastname":"ohana",
          "password":"hellobill123",
-         "username":"0611633265"
+         "username":"OM18259"
       }
    },
    {
-      "name":"facebookads",
-      "credentials":{
-         "password":"2016AlumnEye",
-         "username":"charles.furand@hotmail.com"
-      }
-   },
-   {
-      "name":"zapier",
-      "credentials":{
-         "password":"alumneye01",
-         "username":"michael@alumneye.fr"
-      }
-   },
-   {
-      "name":"github",
+      "name":"gandi",
       "credentials":{
          "password":"Jo31pal00!!!",
-         "username":"lasry.aric@gmail.com"
+         "username":"AL9567-GANDI"
       }
    },
    {
@@ -134,6 +56,14 @@ var credentials = [
       }
    },
    {
+      "name":"awsiam",
+      "credentials":{
+         "account":"068612090890",
+         "password":"hellobill123",
+         "username":"aric"
+      }
+   },
+   {
       "name":"awsmain",
       "credentials":{
          "password":"Jo31pal00!!!",
@@ -141,31 +71,24 @@ var credentials = [
       }
    },
    {
-      "name":"google",
+      "name":"amazon",
       "credentials":{
-         "password":"Jo31pal0!?!",
-         "username":"aric@hellobill.io"
+         "password":"jo31pal",
+         "username":"johana.afenjar@gmail.com"
       }
    },
    {
-      "name":"directenergie",
+      "name":"skype",
       "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@spicesoft.pro"
+         "password":"Jo31pal00!!!",
+         "username":"lasry.aric94"
       }
    },
    {
-      "name":"sfr",
+      "name":"facebookads",
       "credentials":{
-         "password":"cl46tan",
-         "username":"0624722568"
-      }
-   },
-   {
-      "name":"numericable",
-      "credentials":{
-         "password":"Talavera1",
-         "username":"95083962"
+         "password":"2016AlumnEye",
+         "username":"charles.furand@hotmail.com"
       }
    },
    {
@@ -176,17 +99,18 @@ var credentials = [
       }
    },
    {
-      "name":"sentry",
+      "name":"adwords",
       "credentials":{
-         "password":"2vx-f6z-tFG-ywf",
-         "username":"pasvetchine@spicesoft.pro"
+         "password":"Jo31pal00!!!",
+         "username":"accounting@hellobill.io"
       }
    },
    {
-      "name":"edf",
+      "name":"bouygues",
       "credentials":{
-         "password":"fdsfsdf",
-         "username":"mike.ohana@gmail.com"
+         "lastname":"ohana",
+         "password":"hellobill123",
+         "username":"0611633265"
       }
    },
    {
@@ -204,138 +128,10 @@ var credentials = [
       }
    },
    {
-      "name":"newrelic",
+      "name":"airbnb",
       "credentials":{
-         "password":"speCeW6@edaC@e&UfraWEWradrABr4",
-         "username":"dev+newrelic@tandoori.pro"
-      }
-   },
-   {
-      "name":"orangebe",
-      "credentials":{
-         "password":"hellobill-FTW",
-         "username":"jb.escoyez"
-      }
-   },
-   {
-      "name":"balsamiq",
-      "credentials":{
-         "password":"9981Balsamiq1854",
-         "username":"pasvetchine"
-      }
-   },
-   {
-      "name":"upwork",
-      "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@spicesoft.pro"
-      }
-   },
-   {
-      "name":"frichti",
-      "credentials":{
-         "password":"hellobill1",
-         "username":"lasseri.anna@gmail.com"
-      }
-   },
-   {
-      "name":"scaleway",
-      "credentials":{
-         "password":"#q?KK7M}A,U0|J#H+#i",
-         "username":"dev@tandoori.pro"
-      }
-   },
-   {
-      "name":"edenred",
-      "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@tandoori.pro"
-      }
-   },
-   {
-      "name":"autolib",
-      "credentials":{
-         "password":"Aqwzsxedc",
-         "username":"GuthL"
-      }
-   },
-   {
-      "name":"algolia",
-      "credentials":{
-         "password":"oMXH.jLkH77QQEMk&CW;CqKfwBef",
-         "username":"michael@hellobill.io"
-      }
-   },
-   {
-      "name":"envato",
-      "credentials":{
-         "password":"alumneye01",
-         "username":"MO93100"
-      }
-   },
-  //  {
-  //     "name":"salesforce",
-  //     "credentials":{
-  //        "password":"Gf}rgGxTJumNPW=J7kQfZbe3bpA*",
-  //        "username":"michael@hellobill.io"
-  //     }
-  //  },
-   {
-      "name":"bouygues",
-      "credentials":{
-         "lastname":"ohana",
-         "password":"hellobill123",
-         "username":"0611633265"
-      }
-   },
-   {
-      "name":"facebookads",
-      "credentials":{
-         "password":"2016AlumnEye",
-         "username":"charles.furand@hotmail.com"
-      }
-   },
-   {
-      "name":"zapier",
-      "credentials":{
-         "password":"alumneye01",
-         "username":"michael@alumneye.fr"
-      }
-   },
-   {
-      "name":"github",
-      "credentials":{
-         "password":"Jo31pal00!!!",
-         "username":"lasry.aric@gmail.com"
-      }
-   },
-   {
-      "name":"slack",
-      "credentials":{
-         "password":"cl46tan",
-         "team":"upperlife",
-         "username":"falemaster@yahoo.fr"
-      }
-   },
-   {
-      "name":"awsmain",
-      "credentials":{
-         "password":"Jo31pal00!!!",
-         "username":"aric@hellobill.io"
-      }
-   },
-   {
-      "name":"google",
-      "credentials":{
-         "password":"Jo31pal0!?!",
-         "username":"aric@hellobill.io"
-      }
-   },
-   {
-      "name":"directenergie",
-      "credentials":{
-         "password":"Passw01#1",
-         "username":"pasvetchine@spicesoft.pro"
+         "password":"hellobill1234",
+         "username":"mike.ohana@gmail.com"
       }
    },
    {
@@ -346,6 +142,104 @@ var credentials = [
       }
    },
    {
+      "name":"algolia",
+      "credentials":{
+         "password":"oMXH.jLkH77QQEMk&CW;CqKfwBef",
+         "username":"michael@hellobill.io"
+      }
+   },
+   {
+      "name":"cic",
+      "credentials":{
+         "password":"90629062Avb",
+         "username":"014214801075"
+      }
+   },
+   {
+      "name":"sncf",
+      "credentials":{
+         "password":"talavera",
+         "username":"michael.ohana@essec.edu"
+      }
+   },
+   {
+      "name":"adobe",
+      "credentials":{
+         "password":"Jo31pal0!?!",
+         "username":"aric@tilden.io"
+      }
+   },
+   {
+      "name":"edf",
+      "credentials":{
+         "password":"hellobill123",
+         "username":"mike.ohana@gmail.com"
+      }
+   },
+   {
+      "name":"autolib",
+      "credentials":{
+         "password":"Aqwzsxedc",
+         "username":"GuthL"
+      }
+   },
+   {
+      "name":"balsamiq",
+      "credentials":{
+         "password":"9981Balsamiq1854",
+         "username":"pasvetchine"
+      }
+   },
+   {
+      "name":"chauffeurprive",
+      "credentials":{
+         "password":"360cappar",
+         "username":"Edna.ohana@360capitalpartners.com"
+      }
+   },
+   {
+      "name":"directenergie",
+      "credentials":{
+         "password":"Passw01#1",
+         "username":"pasvetchine@spicesoft.pro"
+      }
+   },
+   {
+      "name":"edenred",
+      "credentials":{
+         "password":"Passw01#1",
+         "username":"pasvetchine@tandoori.pro"
+      }
+   },
+   {
+      "name":"envato",
+      "credentials":{
+         "password":"alumneye01",
+         "username":"MO93100"
+      }
+   },
+   {
+      "name":"frichti",
+      "credentials":{
+         "password":"hellobill1",
+         "username":"lasseri.anna@gmail.com"
+      }
+   },
+  //  {
+  //     "name":"nespresso",
+  //     "credentials":{
+  //        "password":"us",
+  //        "username":"tison@360capitalpartners.com"
+  //     }
+  //  },
+   {
+      "name":"newrelic",
+      "credentials":{
+         "password":"speCeW6@edaC@e&UfraWEWradrABr4",
+         "username":"dev+newrelic@tandoori.pro"
+      }
+   },
+   {
       "name":"numericable",
       "credentials":{
          "password":"Talavera1",
@@ -353,10 +247,45 @@ var credentials = [
       }
    },
    {
-      "name":"orange",
+      "name":"online",
       "credentials":{
-         "password":"family5",
-         "username":"Azriafamily@wanadoo.fr"
+         "password":"wWvLWRLQQIHagY5a28MRpidOh",
+         "username":"spicesoft"
+      }
+   },
+   {
+      "name":"orangebe",
+      "credentials":{
+         "password":"hellobill-FTW",
+         "username":"jb.escoyez"
+      }
+   },
+   {
+      "name":"pipedrive",
+      "credentials":{
+         "password":"2016AlumnEye",
+         "username":"contact@alumneye.fr"
+      }
+   },
+  //  {
+  //     "name":"salesforce",
+  //     "credentials":{
+  //        "password":"Gf}rgGxTJumNPW=J7kQfZbe3bpA*",
+  //        "username":"michael@hellobill.io"
+  //     }
+  //  },
+   {
+      "name":"scaleway",
+      "credentials":{
+         "password":"#q?KK7M}A,U0|J#H+#i",
+         "username":"dev@tandoori.pro"
+      }
+   },
+   {
+      "name":"sellsy",
+      "credentials":{
+         "password":"airdoc",
+         "username":"m.atedzoue@airdocsolutions.com"
       }
    },
    {
@@ -367,20 +296,28 @@ var credentials = [
       }
    },
    {
-      "name":"edf",
+      "name":"upwork",
       "credentials":{
-         "password":"fdsfsdf",
-         "username":"mike.ohana@gmail.com"
+         "password":"Passw01#1",
+         "username":"pasvetchine@spicesoft.pro"
       }
    },
    {
-      "name":"uber",
+      "name":"urssaf",
       "credentials":{
-         "password":"litecpp94",
-         "username":"lasry.aric@gmail.com"
+         "password":"CcfOyM",
+         "username":"34022537400024"
+      }
+   },
+   {
+      "name":"zapier",
+      "credentials":{
+         "password":"alumneye01",
+         "username":"michael@alumneye.fr"
       }
    }
 ];
+
 
 function testAll(mUserMe, models) {
   bluebird.each(models, (model) => {

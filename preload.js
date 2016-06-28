@@ -61,6 +61,11 @@ function runnerTypeText(cssSelector, text, originalMessage, callback) {
 
 
 function runnerGoto(url, originalMessage, callback) {
+	window.location = url;
+}
+
+
+function runnerGotoInApp(url, originalMessage, callback) {
 
 setTimeout(() => {
 	window.location = url;
@@ -251,8 +256,10 @@ function __hellobillLoop() {
 		runnerClickAll(message.cssSelector, message, whenDone);
 	} else if (message.action === 'typeText') {
 		runnerTypeText(message.cssSelector, message.text, message, whenDone);
-	} else if (message.action === 'gotoInApp') {
+	} else if (message.action === 'goto') {
 		runnerGoto(message.url, message, whenDone);
+	} else if (message.action === 'gotoInApp') {
+		runnerGotoInApp(message.url, message, whenDone);
 	} else if (message.action === 'getInnerHTML') {
 		runnerGetInnerHTML(message.cssSelector, message, whenDone)
 	} else if (message.action === 'elementExists') {
@@ -294,7 +301,7 @@ window.__hb.remoteLog = remoteLog;
 window.__hb._ = require('lodash');
 
 // window.onload = function() {
-document.addEventListener('DOMContentLoaded', function() {
-	
+window.addEventListener('load', function() {
+
 	window.__hellobill.runLoop();
 });

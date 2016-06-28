@@ -38,7 +38,7 @@
     "checksum": "^0.1.1",
     "clarify": "^1.0.5",
     "dotenv": "^2.0.0",
-    "electron-prebuilt": "^1.2.5",
+    "electron-prebuilt": "^1.2.3",
     "eslint": "^1.10.3",
     "eslint-plugin-react": "^3.16.1",
     "immutable": "^3.7.6",

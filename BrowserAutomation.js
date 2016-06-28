@@ -225,12 +225,18 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this.goto = function(url, callback) {
-		if (url.indexOf('://') === -1) {
-			url = urlParser.resolve(this.getURL(), url);
-		}
-		bw.loadURL(url);
-		winston.info("Just called bw.loadURL(%s)", url)
+		// if (url.indexOf('://') === -1) {
+		// 	url = urlParser.resolve(this.getURL(), url);
+		// }
+		// bw.loadURL(url);
+		// winston.info("Just called bw.loadURL(%s)", url)
+		const message = {
+			action: 'goto',
+			url: url
+		};
+
 		onNextPageLoad(callback, url);
+		sendToBrowser(message, false);
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -488,17 +494,20 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 
 
 
-	function sendToBrowser(data) {
-		if (lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
+	function sendToBrowser(data, expectResponse) {
+		expectResponse = (typeof expectResponse === 'undefined') ? true : expectResponse;
+		if (expectResponse && lastMessageUUID !== null && process.env.LOADED_FILE !== 'production') {
 			winston.error("Last message UUID is not null and we are trying to send another one", {lastMessageUUID: lastMessageUUID, newData: JSON.stringify(data), lastMessageData:JSON.stringify(lastMessageData)});
 			throw new Error("Last message UUID is not null and we are trying to send another one");
 		}
 		if (data.messageUUID) {
 			throw new Error("data.messageUUID is already defined!");
 		}
-		waitingForMessageUUID = messageUUIDCounter;
-		data.messageUUID = messageUUIDCounter++;
-		setlastMessageUUID(data.messageUUID);
+		if (expectResponse) {
+			waitingForMessageUUID = messageUUIDCounter;
+			data.messageUUID = messageUUIDCounter++;
+			setlastMessageUUID(data.messageUUID);
+		}
 		lastMessageData = data;
 		winston.info('sending message to browser', {messageName: messageName, data: data})
 		bw.send(messageName, data);
