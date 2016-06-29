@@ -3,29 +3,50 @@
 function down(data) {
   const date = data.date;
   const moment = window.__hellobill.utils.moment;
-  const year = moment(date,"YYYY-MM").format("YYYY");
-  const month = moment(date,"YYYY-MM").format("M");
-  const end = moment(date,"YYYY-MM").endOf('month').format("D");
-  var links = [];
-  var url = 'https://www.paypal.com/businessexp/transactions/activity?transactiontype=ALL_TRANSACTIONS&currency=ALL_TRANSACTIONS_CURRENCY&limit=&next_page_token=&need_actions=true&need_shipping_info=true&sort=time_created&archive=ACTIVE_TRANSACTIONS&fromdate_year='+year+'&fromdate_month='+month+'&fromdate_day=1&todate_year='+year+'&todate_month='+month+'&todate_day='+end;
-  console.log(url);
+  const allElements = document.querySelectorAll('select#dateRange option');
+  const dateRegStr = moment(date, "YYYY-MM").locale('fr').format("MMMM[.*]YYYY");
   return new Promise((yes,no) => {
-    $.get(url)
-    .then((r) => {
-      console.log(r.data.transactions);
-      if (r.data.transactions != null && r.data.transactions != undefined) {
-        r.data.transactions.forEach((transaction) => {
-          var id = transaction.transactionId;
-          var url = 'https://history.paypal.com/webscr?cmd=_history-details-from-hub&id='+id;
-          console.log(url);
-          links.push(url);
-        })
+    const okOrders = window.__hb._.filter(allElements, (order) => {
+      if (!order.textContent) {
+        return false;
       }
-      yes(links)
+      return !!order.textContent.match(dateRegStr);
+    });
+    if (okOrders.length == 0) {
+      yes(false);
+    }
+    const id = okOrders[0].value;
+    document.querySelector('select#dateRange').value = id;
+    document.querySelector('#panelFieldOptions input[type="submit"]').click();
+    yes(true)
     })
+}
+
+function preparePage() {
+  return new Promise((y,n) => {
+    var text = document.querySelectorAll('#reportNavigation tr.tableRow')[1].innerHTML;
+    text = text.replace('<span tabindex="0" class="textItem">Remarque&nbsp;: ceci n\'est pas une facture.&nbsp;</span>','').replace('<span tabindex="0" style="font-weight:bold;" class="textItem">Afficher les détails &nbsp;</span>','');
+    document.querySelector('body').innerHTML = text;
+    y();
   })
+}
+
+function download(date, offset, done) {
+  //date: 2016-01
+  offset = offset || 0;
+  if (offset >= 1) {
+    done()
+    return ;
+  }
+  document.querySelector('input#downloadReport').click();
+  // setTimeout(() => {
+  //   document.querySelector('select#downloadOption').value = "EXCEL";
+  //   document.querySelector('input#downloadReport').click();
+  // },3000);
 }
 
 module.exports = {
   down: down,
+  download: download,
+  preparePage:preparePage,
 }
