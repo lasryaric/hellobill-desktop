@@ -12,27 +12,27 @@ const mUserMe = {
 }
 
 var credentials = [
-  {
-     "name":"github",
-     "credentials":{
-        "password":"Jo31pal00!!!",
-        "username":"lasry.aric@gmail.com"
-     }
-  },
-  {
-     "name":"google",
-     "credentials":{
-        "password":"Jo31pal0!?!",
-        "username":"aric@hellobill.io"
-     }
-  },
-  {
-     "name":"dropbox",
-     "credentials":{
-        "password":"Jo31pal00!!!",
-        "username":"lasry.aric@gmail.com"
-     }
-  },
+  // {
+  //    "name":"github",
+  //    "credentials":{
+  //       "password":"Jo31pal00!!!",
+  //       "username":"lasry.aric@gmail.com"
+  //    }
+  // },
+  // {
+  //    "name":"google",
+  //    "credentials":{
+  //       "password":"Jo31pal0!?!",
+  //       "username":"aric@hellobill.io"
+  //    }
+  // },
+  // {
+  //    "name":"dropbox",
+  //    "credentials":{
+  //       "password":"Jo31pal00!!!",
+  //       "username":"lasry.aric@gmail.com"
+  //    }
+  // },
    {
       "name":"ovh",
       "credentials":{
@@ -267,13 +267,13 @@ var credentials = [
          "username":"contact@alumneye.fr"
       }
    },
-  //  {
-  //     "name":"salesforce",
-  //     "credentials":{
-  //        "password":"Gf}rgGxTJumNPW=J7kQfZbe3bpA*",
-  //        "username":"michael@hellobill.io"
-  //     }
-  //  },
+   {
+      "name":"salesforce",
+      "credentials":{
+         "password":"Gf}rgGxTJumNPW=J7kQfZbe3bpA*",
+         "username":"michael@hellobill.io"
+      }
+   },
    {
       "name":"scaleway",
       "credentials":{
@@ -315,9 +315,32 @@ var credentials = [
          "password":"alumneye01",
          "username":"michael@alumneye.fr"
       }
+   },
+   {
+      "name":"zendesk",
+      "credentials":{
+         "username":"tvermersch@spicesoft.pro",
+         "password":"Tandoori2014",
+         "compname":"spicesoft"
+      }
+   },
+   {
+      "name":"payplug",
+      "credentials":{
+         "username":"contact@oriflamme-stand.com",
+         "password":"mikomiko26"
+      }
+   },
+   {
+      "name":"paypal",
+      "credentials":{
+         "username":"alumneye@gmail.com",
+         "password":"so}dQ@Q9qiAbX#Do4"
+      }
    }
 ];
 
+credentials = credentials.reverse();
 
 function testAll(mUserMe, models) {
   bluebird.each(models, (model) => {

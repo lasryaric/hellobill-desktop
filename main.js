@@ -190,15 +190,15 @@ function createWindow () {
       const now = moment();
       var months = [];
       months.push(startDate.format(dateFormat));
-      //
-      // while (startDate.format(dateFormat) !== now.format(dateFormat)) {
-      //   months.push(startDate.format(dateFormat));
-      //   startDate.add('1', 'months');
-      // }
-      // months.push(startDate.format(dateFormat));
-      // startDate.add('1', 'months');
-      // months = months.reverse();
-      //months = ['2015-11'];
+
+      while (startDate.format(dateFormat) !== now.format(dateFormat)) {
+        months.push(startDate.format(dateFormat));
+        startDate.add('1', 'months');
+      }
+      months.push(startDate.format(dateFormat));
+      startDate.add('1', 'months');
+      months = months.reverse();
+      // months = ['2015-11'];
 
       appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
