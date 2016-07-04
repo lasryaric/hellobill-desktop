@@ -20,6 +20,7 @@ if (squirelEventHandler()) {
 const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
+const powerSaveBlocker = require('electron').powerSaveBlocker;
 const ConnectorsRunner = require('./lib/ConnectorsRunner');
 const TestCredentials = require('./lib/TestCredentials');
 const ManualFixer = require('./lib/ManualFixer');
@@ -138,6 +139,8 @@ function createWindow () {
 
         return ;
       }
+      const powerAssertionID = powerSaveBlocker.start('prevent-app-suspension');
+      winston.info("Got powerAssertionID: %s", powerAssertionID);
       if (!fetchParams.list || !fetchParams.list.filter) {
         winston.error('datalist || datalist.filter are null', datalist);
 
@@ -285,6 +288,8 @@ function createWindow () {
         }, 1000)
         appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
         appWindow.webContents.send('FetchItAgain', {});
+        winston.info('Stopping powerAssertionID: %s', powerAssertionID);
+        powerSaveBlocker.stop(powerAssertionID);
       })
     });
 
