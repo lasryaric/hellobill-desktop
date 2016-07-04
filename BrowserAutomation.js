@@ -225,18 +225,18 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this.goto = function(url, callback) {
-		// if (url.indexOf('://') === -1) {
-		// 	url = urlParser.resolve(this.getURL(), url);
-		// }
-		// bw.loadURL(url);
-		// winston.info("Just called bw.loadURL(%s)", url)
-		const message = {
-			action: 'goto',
-			url: url
-		};
+		if (url.indexOf('://') === -1) {
+			url = urlParser.resolve(this.getURL(), url);
+		}
+		bw.loadURL(url);
+		winston.info("Just called bw.loadURL(%s)", url)
+		// const message = {
+		// 	action: 'goto',
+		// 	url: url
+		// };
 
 		onNextPageLoad(callback, url);
-		sendToBrowser(message, false);
+		// sendToBrowser(message, false);
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -285,7 +285,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	this.waitForCss = function(cssSelector, silent, timeoutMS, callback) {
 		callback = arguments[arguments.length - 1];
 		silent = arguments.length > 2 ? silent : false;
-		timeoutMS = arguments.length > 3 ? timeoutMS : 10000; //10 seconds
+		timeoutMS = arguments.length > 3 ? timeoutMS : 30000; //30 seconds
 		console.log('waitForCss args(cssSelector, silent, timeoutMS)', cssSelector, silent, timeoutMS)
 
 		if (!callback) {
@@ -351,7 +351,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		}
 
 		return self
-		.waitForCssAsync(mergedCss, true, 10*1000)
+		.waitForCssAsync(mergedCss, true, 25*1000)
 		.then((ex) => {
 			_.each(mergedCss, (v, k) => {
 				if (ex.ex[k]) {
@@ -758,12 +758,6 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 		// }
 	}
 
-
-	this.cleanup = function() {
-		winston.info('cleaning the browswer automation object');
-		bw.webContents.removeAllListeners();
-		bw.removeAllListeners();
-	}
 
 	function getBillDirectory(serviceName, dateStr, username, subAccount) {
 		var p = destinationFolder +"/hellobill/"+dateStr+"/"+serviceName+"/"+username+"/";
