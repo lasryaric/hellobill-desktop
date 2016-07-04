@@ -130,21 +130,6 @@ function createWindow () {
         })
     })
 
-    ipcMain.on('ManualFixer', (ax, mConnector) => {
-      mConnector = immutable.fromJS(mConnector);
-      const serializedCredentials = keytar.getPassword('hellobil_desktopapp', mConnector.get('_id'));
-      const credentials = JSON.parse(serializedCredentials);
-      console.log('*** found credentials:', credentials);
-      var manualFixer = new ManualFixer(mConnector, credentials);
-      manualFixer.start();
-
-      ipcMain.once("CloseManualFixer", () => {
-        manualFixer.end();
-        appWindow.send('ManualFixerIsDone')
-
-      })
-    })
-
     var _fetchMyBillsLock = false;
 
     ipcMain.on('fetchMyBills', (ax, fetchParams) => {
@@ -543,7 +528,7 @@ if (shouldQuit) {
       secret_access_key: process.env.AWS_SECRET,
       name_format: email+'/%Y_%m_%d/%Y-%m-%d-%H-%M-%S-%L_'+process.env.STARTUP_TIME+'.log',
       max_file_size: 50000000,
-      upload_every:500,
+      upload_every: 2000,
     });
     s3_stream.on('error', (error) => {
       console.log('S3 stream error:', error);

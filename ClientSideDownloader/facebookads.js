@@ -1,24 +1,13 @@
 'use strict';
 
-function pageUrls(data) {
-  const urls = data.urls;
-  return new Promise((yes,no) => {
-    yes(urls)
-  })
-}
 
 function getInvoicesURLS() {
   return new Promise((yes,no) => {
-    const elements = document.querySelectorAll('ul[spacing="medium"][direction="vertical"] li');
-    const send = window.__hb._.map(elements, (order) => {
-      var title = order.querySelectorAll('td')[0].querySelectorAll('div[display="block"][type="inherit"]')[0].textContent;
-      const trans = order.querySelectorAll('a[href*="manager/billing/transaction_details"]');
-      const sent = window.__hb._.map(trans, (link) => {
-        return link.href;
-      });
-      return [title,sent];
+    const trans = document.querySelectorAll('a[href*="billing/transaction_details/"]');
+    const urls = window.__hb._.map(trans, (link) => {
+      return link.href;
     });
-    yes(send)
+    yes(urls)
   })
 }
 
@@ -44,5 +33,4 @@ function download(date, offset, done) {
 module.exports = {
   download: download,
   getInvoicesURLS: getInvoicesURLS,
-  pageUrls: pageUrls,
 }
