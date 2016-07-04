@@ -547,6 +547,7 @@ if (shouldQuit) {
     })
 
     winston.info('S3 log initiated...')
+    winston.info("App opened - version: %s", app.getVersion())
 
     winston.rewriters.push(function(level, msg, metaOriginal) {
       const meta = _.cloneDeep(metaOriginal);
@@ -607,3 +608,5 @@ if (shouldQuit) {
 
     })
   });
+
+winston.info("App opened - version: %s", app.getVersion())
