@@ -215,28 +215,27 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this._goto = function(url, callback) {
-		const message = {
-			action: 'goto',
-			url: url
-		};
-
-		onNextPageLoad(callback, url);
-		sendToBrowser(message);
-	}
-
-	this.goto = function(url, callback) {
 		if (url.indexOf('://') === -1) {
 			url = urlParser.resolve(this.getURL(), url);
 		}
 		bw.loadURL(url);
 		winston.info("Just called bw.loadURL(%s)", url)
-		// const message = {
-		// 	action: 'goto',
-		// 	url: url
-		// };
-
 		onNextPageLoad(callback, url);
-		// sendToBrowser(message, false);
+	}
+
+	var gotoTimeout = null;
+	this.goto = function(url, callback) {
+		clearTimeout(gotoTimeout);
+
+		function safeCallback() {
+			clearTimeout(gotoTimeout);
+			return callback();
+		}
+		self._goto(url, safeCallback);
+		gotoTimeout = setTimeout(() => {
+			winston.info('gotoTimeout kicked off for url: %s', url);
+			self._goto(url, safeCallback);
+		},  60 * 1000)
 	}
 
 	this.waitForURL = function(urls, callback) {
