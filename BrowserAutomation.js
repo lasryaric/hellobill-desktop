@@ -474,6 +474,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 					self.emitter.emit('fileDownloaded', {
 						fileHash: fileHash,
 						fileName: fileName,
+						month: momentDate.format("YYYY-MM"),
 						pdfURL: bw.webContents.getURL(),
 						connectorID: modelConnector._id,
 						localFileName: fileDirectory + fileName,
@@ -680,6 +681,7 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 								self.emitter.emit('fileDownloaded', {
 									fileHash: fileHash,
 									fileName: remoteFileName,
+									month: dateInstance.format("YYYY-MM"),
 									connectorID: modelConnector._id,
 									localFileName: fileFullPath,
 									dumpDirectory: dumpDirectory,

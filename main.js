@@ -188,55 +188,54 @@ function createWindow () {
       months = months.reverse();
       // months = ['2015-11'];
 
-      appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Starting...'});
       var doNotRetryList = immutable.Set();
-
-      function fileDownloadedHandler(data) {
-        console.log('file downloaded!', data)
-        if (!sessionStats[data.name]) {
-          sessionStats[data.name] = 0;
-        }
-        sessionStats[data.name]++;
-
-        var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
-        console.log('dump: %s, %s, %s', data.localFileName, remotepath)
-        appWindow.webContents.send('fileDownloaded', data);
-
-        FSClient.putFile(data.localFileName, remotepath, (err) => {
-          if (err) {
-              winston.error('Error dumping file: %s', err.message);
-
-              return ;
-          }
-          winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
-        })
-      }
-
-      var total = immutableConnectors.size * months.length;
-      var counter = 0;
 
       return bluebird
       .map(immutableConnectors, (modelConnector) => {
+        var cerror = null;
+        var completed = false;
 
+        function fileDownloadedHandler(data) {
+          console.log('file downloaded!', data)
+          if (!sessionStats[data.name]) {
+            sessionStats[data.name] = 0;
+          }
+          sessionStats[data.name]++;
+
+          var remotepath = '/'+mUserMe.email+"/"+data.dumpDirectory+data.fileName;
+          console.log('dump: %s, %s, %s', data.localFileName, remotepath)
+          appWindow.webContents.send('fileDownloaded', data);
+          appWindow.webContents.send('ConnectorsStatus', {end:false,connector:data.name, month:data.month,id:data.connectorID,downloaded:sessionStats[data.name],hasError:cerror,completed:completed});
+
+          FSClient.putFile(data.localFileName, remotepath, (err) => {
+            if (err) {
+                winston.error('Error dumping file: %s', err.message);
+
+                return ;
+            }
+            winston.info('successfully uploaded to : %s %s', data.localFileName, remotepath)
+          })
+        }
         const modelConnectorJS = modelConnector.toJS();
         const cr = new ConnectorsRunner();
         cr.on('fileDownloaded', fileDownloadedHandler);
-
           return bluebird
           .each(months, (monthStr) => {
           const thisMoment = moment(monthStr, "YYYY-MM");
-
-          appWindow.webContents.send('ConnectorsStatus', {status:'running', description:'Working on '+modelConnector.get('name')+' / '+thisMoment.format("YYYY-MM")+', ('+parseInt((counter/total * 100), 10)+'%)'});
-          counter++;
+          if (!sessionStats[modelConnector.get('name')]) {
+            sessionStats[modelConnector.get('name')] = 0;
+          }
+          appWindow.webContents.send('ConnectorsStatus', {end:false,connector:modelConnector.get('name'), month:thisMoment.format("YYYY-MM"),id:modelConnector.get('_id'),downloaded:sessionStats[modelConnector.get('name')],hasError:false,completed:completed});
 
           if (doNotRetryList.has(modelConnector.get('_id'))) {
             winston.info('Skipping %s / %s because it is on the do not retry list', modelConnector.get('name'), monthStr);
-
             return ;
           }
 
           if (modelConnector.get('error')) {
             const errorName = modelConnector.getIn(['error', 'errorName']);
+            cerror = modelConnector.getIn(['error', 'errorMessage']);
+            Slack.sendMessage('Bug for '+mUserMe.email+', connector: '+modelConnector.get('name')+', error: '+modelConnector.getIn(['error', 'errorMessage']),'#bugs');
             if (['ConnectorErrorWrongCredentials', 'ConnectorErrorCredentialsNotFound'].indexOf(errorName) > -1) {
                 winston.info('Skipping %s / %s because the connector is marked as errored with %s / ', modelConnector.get('name'), monthStr, errorName, modelConnector.getIn(['error', 'errorMessage']));
 
@@ -252,6 +251,9 @@ function createWindow () {
           })
           .catch((err) => {
             winston.error('Error for connector %s / %s. error:%s errorMessage: %s', modelConnector.get('name'), monthStr, err.name, err.message)
+            cerror = err.message;
+            Slack.sendMessage('Bug for '+mUserMe.email+', connector: '+modelConnector.get('name')+', error: '+err.message,'#bugs');
+
             const errorData = {
               errorMessage: err.message,
               errorName: err.name,
@@ -267,6 +269,8 @@ function createWindow () {
           })
         })
         .then(() => {
+          completed = true;
+          appWindow.webContents.send('ConnectorsStatus', {end:false,connector:modelConnector.get('name'), month:'',id:modelConnector.get('_id'),downloaded:sessionStats[modelConnector.get('name')],hasError:cerror,completed:completed});
           return new Promise((yes) => {
             setTimeout(yes, 1000)
           })
@@ -274,7 +278,6 @@ function createWindow () {
         .then(() => {
           cr.removeListener('fileDownloaded', fileDownloadedHandler);
           return cr.closeBrowserWindow(modelConnectorJS);
-
         })
       }, {concurrency: 1})
       .catch((err) => {
@@ -282,12 +285,10 @@ function createWindow () {
       })
       .then(() => {
         _fetchMyBillsLock = false;
-
+        appWindow.webContents.send('ConnectorsStatus', {end:true,connector:'', month:'',id:'',downloaded:'',hasError:'',completed:''});
         setTimeout(() => {
           Slack.sendMessage('Done fetching bills for '+mUserMe.email+', details: '+ StrFormat.hashMapToString(sessionStats))
         }, 1000)
-        appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
-        appWindow.webContents.send('FetchItAgain', {});
         winston.info('Stopping powerAssertionID: %s', powerAssertionID);
         powerSaveBlocker.stop(powerAssertionID);
       })
