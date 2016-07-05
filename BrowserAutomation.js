@@ -215,28 +215,27 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 	}
 
 	this._goto = function(url, callback) {
-		const message = {
-			action: 'goto',
-			url: url
-		};
-
-		onNextPageLoad(callback, url);
-		sendToBrowser(message);
-	}
-
-	this.goto = function(url, callback) {
 		if (url.indexOf('://') === -1) {
 			url = urlParser.resolve(this.getURL(), url);
 		}
 		bw.loadURL(url);
 		winston.info("Just called bw.loadURL(%s)", url)
-		// const message = {
-		// 	action: 'goto',
-		// 	url: url
-		// };
-
 		onNextPageLoad(callback, url);
-		// sendToBrowser(message, false);
+	}
+
+	var gotoTimeout = null;
+	this.goto = function(url, callback) {
+		clearTimeout(gotoTimeout);
+
+		function safeCallback() {
+			clearTimeout(gotoTimeout);
+			return callback();
+		}
+		self._goto(url, safeCallback);
+		gotoTimeout = setTimeout(() => {
+			winston.info('gotoTimeout kicked off for url: %s', url);
+			self._goto(url, safeCallback);
+		},  60 * 1000)
 	}
 
 	this.waitForURL = function(urls, callback) {
@@ -304,14 +303,14 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				timeoutMS: timeoutMS,
 			}
 
-			console.log('setting up the callback');
+			// console.log('setting up the callback');
 
-			if (reEnter > 0) {
-
-				setlastMessageUUID(null);
-			}
-			reEnter++;
-			setlastMessageUUID(null);
+			// if (reEnter > 0) {
+			//
+			// 	setlastMessageUUID(null);
+			// }
+			// reEnter++;
+			// setlastMessageUUID(null);
 			sendToBrowser(message);
 		}
 
@@ -329,10 +328,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			onNextActionCompleted(safeCallback);
 		}
 
-		bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
+		//bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
 
 		_waitForCss(cssSelector, silent)
-		onNextActionCompleted(safeCallback);
+		// onNextActionCompleted(safeCallback);
+		onNextActionCompleted(callback);
 
 	}
 

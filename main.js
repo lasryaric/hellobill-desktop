@@ -20,6 +20,7 @@ if (squirelEventHandler()) {
 const electron = require('electron');
 const shell = electron.shell;
 const ipcMain = require('electron').ipcMain;
+const powerSaveBlocker = require('electron').powerSaveBlocker;
 const ConnectorsRunner = require('./lib/ConnectorsRunner');
 const TestCredentials = require('./lib/TestCredentials');
 const ManualFixer = require('./lib/ManualFixer');
@@ -130,21 +131,6 @@ function createWindow () {
         })
     })
 
-    ipcMain.on('ManualFixer', (ax, mConnector) => {
-      mConnector = immutable.fromJS(mConnector);
-      const serializedCredentials = keytar.getPassword('hellobil_desktopapp', mConnector.get('_id'));
-      const credentials = JSON.parse(serializedCredentials);
-      console.log('*** found credentials:', credentials);
-      var manualFixer = new ManualFixer(mConnector, credentials);
-      manualFixer.start();
-
-      ipcMain.once("CloseManualFixer", () => {
-        manualFixer.end();
-        appWindow.send('ManualFixerIsDone')
-
-      })
-    })
-
     var _fetchMyBillsLock = false;
 
     ipcMain.on('fetchMyBills', (ax, fetchParams) => {
@@ -153,6 +139,8 @@ function createWindow () {
 
         return ;
       }
+      const powerAssertionID = powerSaveBlocker.start('prevent-app-suspension');
+      winston.info("Got powerAssertionID: %s", powerAssertionID);
       if (!fetchParams.list || !fetchParams.list.filter) {
         winston.error('datalist || datalist.filter are null', datalist);
 
@@ -300,6 +288,8 @@ function createWindow () {
         }, 1000)
         appWindow.webContents.send('ConnectorsStatus', {status:'idle'});
         appWindow.webContents.send('FetchItAgain', {});
+        winston.info('Stopping powerAssertionID: %s', powerAssertionID);
+        powerSaveBlocker.stop(powerAssertionID);
       })
     });
 
@@ -543,7 +533,7 @@ if (shouldQuit) {
       secret_access_key: process.env.AWS_SECRET,
       name_format: email+'/%Y_%m_%d/%Y-%m-%d-%H-%M-%S-%L_'+process.env.STARTUP_TIME+'.log',
       max_file_size: 50000000,
-      upload_every:500,
+      upload_every: 2000,
     });
     s3_stream.on('error', (error) => {
       console.log('S3 stream error:', error);
@@ -557,6 +547,7 @@ if (shouldQuit) {
     })
 
     winston.info('S3 log initiated...')
+    winston.info("App opened - version: %s", app.getVersion())
 
     winston.rewriters.push(function(level, msg, metaOriginal) {
       const meta = _.cloneDeep(metaOriginal);
@@ -617,3 +608,5 @@ if (shouldQuit) {
 
     })
   });
+
+winston.info("App opened - version: %s", app.getVersion())
