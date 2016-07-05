@@ -303,14 +303,14 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 				timeoutMS: timeoutMS,
 			}
 
-			console.log('setting up the callback');
+			// console.log('setting up the callback');
 
-			if (reEnter > 0) {
-
-				setlastMessageUUID(null);
-			}
-			reEnter++;
-			setlastMessageUUID(null);
+			// if (reEnter > 0) {
+			//
+			// 	setlastMessageUUID(null);
+			// }
+			// reEnter++;
+			// setlastMessageUUID(null);
 			sendToBrowser(message);
 		}
 
@@ -328,10 +328,11 @@ function mainRunner(bw, serviceName, destinationFolder, email, connectorUsername
 			onNextActionCompleted(safeCallback);
 		}
 
-		bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
+		//bw.webContents.on('runloop-ready', wfcDidFinishLoadHandler);
 
 		_waitForCss(cssSelector, silent)
-		onNextActionCompleted(safeCallback);
+		// onNextActionCompleted(safeCallback);
+		onNextActionCompleted(callback);
 
 	}
 

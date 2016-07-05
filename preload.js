@@ -1,5 +1,9 @@
 'use strict';
 
+const electronRemote = require('electron').remote;
+
+
+
 function runnerClick(cssSelector, originalMessage, callback) {
 
 	var domElemement = document.querySelectorAll(cssSelector)
@@ -67,9 +71,9 @@ function runnerGoto(url, originalMessage, callback) {
 
 function runnerGotoInApp(url, originalMessage, callback) {
 
-setTimeout(() => {
-	window.location = url;
-}, 1);
+	setTimeout(() => {
+		window.location = url;
+	}, 1);
 
 	callback(null, originalMessage);
 }
@@ -140,7 +144,6 @@ function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback)
 
 		var elementExists = null;
 		var foundAny = false;
-		//debugger;
 		if (typeof(csss) !== "string") {
 			const results = {};
 			window.__hb._.forEach(csss, (v, k) => {
@@ -154,8 +157,8 @@ function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback)
 
 			elementExists = {ex: results};
 		} else {
-				foundAny = !!(document.querySelector(csss));
-				elementExists = { elementExists: foundAny, ex: foundAny};
+			foundAny = !!(document.querySelector(csss));
+			elementExists = { elementExists: foundAny, ex: foundAny};
 		}
 
 		if (foundAny) {
@@ -181,7 +184,6 @@ function runnerWaitForCssMulti(csss, silent, timeout, originalMessage, callback)
 }
 
 function runnerDownload(serviceName, date, originalMessage) {
-	//debugger;
 	const downloader = window.__hb.downloaders(serviceName);
 	var downloadOffset = 0;
 
@@ -225,6 +227,7 @@ function whenDone(error, originalMessage, resultData) {
 		data.errorMessage = error.message;
 	}
 	data.originalMessageUUID = originalMessage.messageUUID;
+	removeLastMessage();
 
 	window.__hellobill.ipc.send(messageName, data);
 	// remoteLog('whenDone is Sending: messageName, data, originalMessage: ' + messageName+' data: '+JSON.stringify(data)+', originalMessage:'+JSON.stringify(originalMessage));
@@ -239,15 +242,28 @@ function remoteLog(message) {
 	})
 }
 
-function __hellobillLoop() {
-	// remoteLog('Starting the browser runLoop')
-	var _gotMessage = false;
 
-	window.__hellobill.ipc.on('invokeAction', function(event, message) {
+
+function saveLastMessage(message) {
+	electronRemote.getGlobal('saveRendererMessage')(message);
+}
+
+function getLastMessage() {
+	var f =  electronRemote.getGlobal('getRendererMessage');
+	var result = f();
+
+	return result;
+}
+
+function removeLastMessage() {
+	return electronRemote.getGlobal('removeRendererMessage')();
+}
+
+function __hbGotMessage(message) {
 
 
 	console.log('got a message from main process:', message)
-	// console.log('message', message);
+	saveLastMessage(message);
 
 
 	if ( message.action === 'click') {
@@ -277,15 +293,23 @@ function __hellobillLoop() {
 	} else {
 		console.log('got an unknown message:', message);
 	}
-	});
+}
 
-		window.__hellobill.ipc.sendSync('RunloopStarted');
-		setTimeout(() => {
-			if (false === _gotMessage) {
-				// alert('using backend runloop')
-				// window.__hellobill.ipc.sendSync('RunloopStarted');
-			}
-		}, 6000)
+function __hellobillLoop() {
+
+	var timeoutMessageRecovery = setTimeout(() => {
+
+		var savedMessage = getLastMessage();
+		if (savedMessage) {
+			__hbGotMessage(savedMessage);
+		}
+	}, 3000);
+
+	window.__hellobill.ipc.on('invokeAction', function(event, message) {
+		clearTimeout(timeoutMessageRecovery);
+		__hbGotMessage(message);
+	});
+	window.__hellobill.ipc.sendSync('RunloopStarted');
 }
 
 
