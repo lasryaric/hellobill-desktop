@@ -3,7 +3,6 @@
 function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
-  debugger;
   const moment = window.__hellobill.utils.moment;
   const dateRegStr = moment(date, "YYYY-MM").format("MM/YYYY");
   const orders = document.querySelectorAll('section.billing-table tr');
