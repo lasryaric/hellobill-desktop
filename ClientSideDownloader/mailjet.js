@@ -4,7 +4,7 @@ function download(date, offset, done) {
   //date: 2016-01
   offset = offset || 0;
   const moment = window.__hellobill.utils.moment;
-  const dateRegStr = moment(date, "YYYY-MM").format("MMM[.*]YYYY").toLowerCase();
+  const dateRegStr = moment(date, "YYYY-MM").locale("fr").format("MMM[.*]YYYY").toLowerCase();
   const orders = document.querySelectorAll('tr[role="row"]');
   const okOrders = window.__hb._.filter(orders, (order) => {
     const dateDomElement = order.querySelector('td[aria-describedby*="paid_at"]');
